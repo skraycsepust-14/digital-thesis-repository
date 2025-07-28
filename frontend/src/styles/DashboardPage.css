@@ -1,0 +1,88 @@
+/* frontend/src/styles/DashboardPage.css */
+
+/* Horizontal view for thesis cards */
+.thesis-cards-horizontal {
+    display: flex;
+    flex-wrap: nowrap;
+    /* Prevent items from wrapping to the next line */
+    overflow-x: auto;
+    /* Allow horizontal scrolling if items exceed container width */
+    gap: 1rem;
+    /* Space between the cards */
+    padding-bottom: 1rem;
+    /* Provide space for the scrollbar if it appears */
+    scrollbar-width: thin;
+    /* Firefox */
+    scrollbar-color: #007bff #f0f2f5;
+    /* Firefox */
+}
+
+/* Custom scrollbar for Webkit browsers (Chrome, Safari) */
+.thesis-cards-horizontal::-webkit-scrollbar {
+    height: 8px;
+    /* Height of the horizontal scrollbar */
+}
+
+.thesis-cards-horizontal::-webkit-scrollbar-track {
+    background: #f0f2f5;
+    /* Track color */
+    border-radius: 10px;
+}
+
+.thesis-cards-horizontal::-webkit-scrollbar-thumb {
+    background-color: #007bff;
+    /* Thumb color */
+    border-radius: 10px;
+    border: 2px solid #f0f2f5;
+    /* Padding around thumb */
+}
+
+
+.thesis-card-item {
+    /* Each item takes up 1/5th of the container width minus the gap */
+    flex: 0 0 calc((100% / 5) - 0.8rem);
+    /* 0.8rem is roughly 1rem gap distributed for 5 items */
+    max-width: calc((100% / 5) - 0.8rem);
+    min-width: 200px;
+    /* Ensures cards don't get too small on wider screens */
+    margin-bottom: 1rem;
+    /* Add some vertical margin, useful if they wrap on smaller screens */
+}
+
+/* Adjustments for smaller screens (e.g., tablets and mobile) */
+@media (max-width: 992px) {
+
+    /* Adjust breakpoint as needed, e.g., Bootstrap's lg breakpoint */
+    .thesis-card-item {
+        flex: 0 0 calc((100% / 3) - 0.7rem);
+        /* Show 3 cards per row */
+        max-width: calc((100% / 3) - 0.7rem);
+    }
+}
+
+@media (max-width: 768px) {
+
+    /* Bootstrap's md breakpoint */
+    .thesis-card-item {
+        flex: 0 0 calc((100% / 2) - 0.5rem);
+        /* Show 2 cards per row */
+        max-width: calc((100% / 2) - 0.5rem);
+    }
+}
+
+@media (max-width: 576px) {
+
+    /* Bootstrap's sm breakpoint */
+    .thesis-card-item {
+        flex: 0 0 100%;
+        /* Show 1 card per row on very small screens */
+        max-width: 100%;
+    }
+}
+
+/* General dashboard card styling, can be added here or in App.css */
+.dashboard-content-card {
+    border-radius: 15px;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+    background: linear-gradient(145deg, #ffffff, #f0f2f5);
+}

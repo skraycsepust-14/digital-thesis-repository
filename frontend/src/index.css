@@ -1,0 +1,32 @@
+/* frontend/src/index.css */
+
+/* --- Essential for Scrolling --- */
+html,
+body,
+#root {
+  height: 100%;
+  /* Ensures these elements take up the full height of their parent/viewport */
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  /* --- Global Styling --- */
+  font-family: 'Roboto', sans-serif;
+  /* Keep one global font family consistent */
+  background-color: #343a40 !important;
+  /* Dark background for the entire application body */
+  color: #f8f9fa;
+  /* IMPORTANT: Changed to a light color for text visibility on dark background */
+
+  /* --- Scrolling Fix --- */
+  overflow-y: auto;
+  /* CRITICAL: Allows vertical scrolling when content exceeds viewport height */
+}
+
+/* You can keep your .content-wrapper in App.css if you prefer: */
+/* frontend/src/App.css */
+/* .content-wrapper {
+  min-height: 100vh;
+  padding-top: 8rem;
+} */

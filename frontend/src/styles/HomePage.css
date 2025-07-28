@@ -1,0 +1,152 @@
+/* frontend/src/styles/HomePage.css */
+
+/* ... (Hero Section Styles - Keep existing unchanged) ... */
+
+/* Styles for the public thesis list items (single line) */
+.thesis-list-vertical {
+    border-radius: 8px;
+    /* Optional: Slightly rounded corners for the list container */
+    overflow: hidden;
+    /* Ensures child borders are contained */
+}
+
+.public-thesis-line-item {
+    display: flex;
+    /* Makes the content within the link horizontal */
+    align-items: center;
+    /* Vertically centers items */
+    justify-content: space-between;
+    /* Spreads items out */
+    padding: 1rem 1.5rem;
+    /* Padding inside each item */
+    border-bottom: 1px solid #e9ecef;
+    /* Separator line between items */
+    color: #343a40;
+    /* Default text color */
+    font-size: 1rem;
+    line-height: 1.5;
+    /* Ensure good line spacing */
+    transition: background-color 0.2s ease-in-out;
+    /* Smooth transition on hover */
+}
+
+.public-thesis-line-item:first-child {
+    border-top: 1px solid #e9ecef;
+    /* Top border for the first item */
+}
+
+.public-thesis-line-item:hover {
+    background-color: #f8f9fa;
+    /* Light background on hover */
+    color: #0056b3;
+    /* Slightly darker text on hover */
+    text-decoration: none;
+    /* Remove underline on hover */
+}
+
+.public-thesis-line-item .thesis-title {
+    font-weight: bold;
+    color: #007bff;
+    /* Primary color for title */
+    flex-basis: 45%;
+    /* ADJUSTED: Increased space for title */
+    flex-grow: 1;
+    /* Allows title to take available space */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-right: 0.75rem;
+    /* ADJUSTED: Reduced margin */
+}
+
+.public-thesis-line-item .thesis-author,
+.public-thesis-line-item .thesis-department {
+    flex-grow: 1;
+    /* Allows them to grow if space permits */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-right: 0.75rem;
+    /* ADJUSTED: Reduced margin */
+    color: #6c757d;
+    /* Muted color for details */
+}
+
+.public-thesis-line-item .thesis-author {
+    flex-basis: 20%;
+    /* ADJUSTED: Less space for author */
+    min-width: 100px;
+    /* Ensures a minimum width for readability */
+}
+
+.public-thesis-line-item .thesis-department {
+    flex-basis: 15%;
+    /* ADJUSTED: Even less space for department */
+    min-width: 80px;
+    /* Ensures a minimum width for readability */
+}
+
+.public-thesis-line-item .thesis-year {
+    flex-basis: auto;
+    /* Auto width based on content */
+    flex-shrink: 0;
+    /* Prevents shrinking */
+    white-space: nowrap;
+    text-align: right;
+    color: #6c757d;
+    /* Muted color for year */
+}
+
+
+/* Responsive adjustments for smaller screens (UNCHANGED from previous version) */
+@media (max-width: 768px) {
+    .public-thesis-line-item {
+        flex-direction: column;
+        align-items: flex-start;
+        padding: 0.75rem 1rem;
+    }
+
+    .public-thesis-line-item span {
+        width: 100%;
+        margin-right: 0 !important;
+        margin-bottom: 0.25rem;
+        white-space: normal;
+        overflow: visible;
+        text-overflow: clip;
+    }
+
+    .public-thesis-line-item .thesis-title {
+        margin-bottom: 0.5rem;
+    }
+
+    .public-thesis-line-item .thesis-author.d-none.d-md-inline,
+    .public-thesis-line-item .thesis-department.d-none.d-lg-inline {
+        display: none !important;
+    }
+}
+
+/* Optional: Additional styling for the main container if desired (UNCHANGED) */
+.container.my-5 .list-group {
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+}
+
+/* frontend/src/styles/HomePage.css */
+
+/* ... (Keep all existing styles for hero, thesis list, etc.) ... */
+
+/* NEW: Styles for feature cards */
+.feature-card {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.clickable-feature-card {
+    cursor: pointer;
+    /* Indicates it's clickable */
+}
+
+.clickable-feature-card:hover {
+    transform: translateY(-5px);
+    /* Lifts the card slightly on hover */
+    box-shadow: 0 12px 25px rgba(0, 0, 0, 0.15) !important;
+    /* Stronger shadow on hover */
+}

@@ -1,0 +1,162 @@
+/* frontend/src/styles/UploadThesisPage.css */
+
+/* Scope all styles to the unique wrapper class */
+.upload-thesis-page-wrapper.container {
+    /* Apply to the container that IS the wrapper */
+    max-width: 900px;
+    /* Adjust max-width for comfortable form width */
+}
+
+.upload-thesis-page-wrapper .upload-card {
+    border-radius: 12px;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+    padding: 30px;
+    background-color: #fff;
+    border: none;
+    margin-bottom: 30px;
+    /* Space below the card */
+}
+
+/* Header styling */
+.upload-thesis-page-wrapper .upload-header {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.upload-thesis-page-wrapper .upload-header .svg-inline--fa {
+    font-size: 3rem;
+    color: #007bff;
+    /* Primary blue color */
+    margin-bottom: 15px;
+    opacity: 0.8;
+}
+
+.upload-thesis-page-wrapper .upload-header h2 {
+    font-size: 2.2rem;
+    color: #343a40;
+    /* Darker text for heading */
+    margin-bottom: 10px;
+    font-weight: 700;
+}
+
+.upload-thesis-page-wrapper .upload-header p {
+    font-size: 1.05rem;
+    color: #6c757d;
+    /* Muted text for description */
+    line-height: 1.6;
+}
+
+/* Form group and input enhancements */
+.upload-thesis-page-wrapper .form-group {
+    margin-bottom: 20px;
+    /* Consistent spacing between form groups */
+}
+
+.upload-thesis-page-wrapper .form-label {
+    font-weight: 600;
+    color: #495057;
+    margin-bottom: 8px;
+    /* Space between label and input */
+    display: block;
+    /* Ensure label takes full width */
+}
+
+.upload-thesis-page-wrapper .input-group-text {
+    background-color: #e9ecef;
+    border: 1px solid #ced4da;
+    border-right: none;
+    color: #495057;
+    padding: 0.5rem 1rem;
+    border-top-left-radius: 0.25rem;
+    border-bottom-left-radius: 0.25rem;
+}
+
+.upload-thesis-page-wrapper .form-control,
+.upload-thesis-page-wrapper .form-select,
+.upload-thesis-page-wrapper .react-datepicker-wrapper .form-control {
+    /* Target date picker input */
+    border-left: none;
+    /* Blend with input-group-text */
+    border-radius: 0.25rem;
+    box-shadow: none;
+    /* Remove default focus glow */
+    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+/* Focus styles */
+.upload-thesis-page-wrapper .form-control:focus,
+.upload-thesis-page-wrapper .form-select:focus,
+.upload-thesis-page-wrapper .react-datepicker-wrapper .form-control:focus {
+    border-color: #80bdff;
+    outline: 0;
+    box-shadow: 0 0 0 0.25rem rgba(0, 123, 255, 0.25);
+}
+
+.upload-thesis-page-wrapper textarea.form-control {
+    resize: vertical;
+    /* Allow vertical resizing for textareas */
+    min-height: 120px;
+    /* Minimum height for abstract */
+}
+
+/* React Datepicker specific overrides */
+.upload-thesis-page-wrapper .react-datepicker-wrapper {
+    width: 100%;
+    /* Make datepicker take full width of its parent */
+}
+
+.upload-thesis-page-wrapper .react-datepicker__input-container input {
+    width: 100%;
+}
+
+/* Buttons */
+.upload-thesis-page-wrapper .btn-primary {
+    background-color: #007bff;
+    border-color: #007bff;
+    padding: 12px 25px;
+    /* Larger padding for a more prominent button */
+    font-size: 1.1rem;
+    font-weight: 600;
+    border-radius: 8px;
+    transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.upload-thesis-page-wrapper .btn-primary:hover {
+    background-color: #0056b3;
+    border-color: #0056b3;
+    box-shadow: 0 4px 10px rgba(0, 123, 255, 0.2);
+}
+
+.upload-thesis-page-wrapper .btn-primary:disabled {
+    opacity: 0.65;
+    cursor: not-allowed;
+}
+
+/* Alerts */
+.upload-thesis-page-wrapper .alert {
+    border-radius: 8px;
+    font-size: 1rem;
+    padding: 15px 20px;
+    margin-bottom: 25px;
+    /* Space below alerts */
+}
+
+/* Spinner for loading states */
+.upload-thesis-page-wrapper .spinner-border {
+    vertical-align: middle;
+}
+
+/* Responsive adjustments if necessary */
+@media (max-width: 768px) {
+    .upload-thesis-page-wrapper .upload-card {
+        padding: 20px;
+    }
+
+    .upload-thesis-page-wrapper .upload-header h2 {
+        font-size: 1.8rem;
+    }
+
+    .upload-thesis-page-wrapper .upload-header .svg-inline--fa {
+        font-size: 2.5rem;
+    }
+}

@@ -1,0 +1,4 @@
+{
+    "mongoURI": "mongodb+srv://shuvokumerraycse10:ZHQCNdl28SLEzjqe@cluster0.0doar1z.mongodb.net/digi-thesis_DB?retryWrites=true&w=majority&appName=Cluster0",
+    "jwtSecret": "b3f59b42155f6044947dddec773df6bb78839147364cbeb6aa39c84d52b901b085175d2c3691053b4b2f8f29ae50eab91353f20641a8d0550efe954a81674754"
+}

@@ -1,0 +1,177 @@
+/* frontend/src/styles/DarkTheme.css */
+
+/*
+  This file contains global styles and variables for the dark theme.
+  It should be imported once and the 'dark-theme' class applied to a parent
+  element (e.g., the <body> tag) to enable it.
+*/
+
+.dark-theme {
+    /* --- Main Color Palette Variables (Centralized) --- */
+    --background-color: #202124;
+    --primary-text-color: #e8eaed;
+    --secondary-text-color: #b7b9be;
+
+    /* Card and Component Backgrounds */
+    --card-bg-color: #2e2f33;
+    --card-border-color: rgba(255, 255, 255, 0.1);
+
+    /* Form Elements */
+    --input-bg-color: #3e3f42;
+    --input-border-color: #5f6368;
+    --input-placeholder-color: #9aa0a6;
+
+    /* Buttons */
+    --primary-btn-bg: #8ab4f8;
+    --primary-btn-color: #202124;
+    --primary-btn-hover-bg: #a5c3f8;
+    --outline-btn-color: #8ab4f8;
+
+    /* Alerts and Status Indicators */
+    --alert-info-bg: #3e4451;
+    --alert-info-color: #c9d1d9;
+    --alert-info-border: #5f6368;
+
+    --alert-danger-bg: #4a1719;
+    --alert-danger-color: #ffc2c5;
+    --alert-danger-border: #6f2629;
+
+    --status-success: #62c37e;
+    --status-danger: #ff6060;
+    --status-warning: #fccf00;
+
+    /* --- Global Element Styles --- */
+    body {
+        background-color: var(--background-color);
+        color: var(--primary-text-color);
+    }
+
+    /* Bootstrap Text Utilities Overrides */
+    .text-primary {
+        color: var(--primary-btn-bg) !important;
+    }
+
+    .text-secondary {
+        color: var(--secondary-text-color) !important;
+    }
+
+    .text-success {
+        color: var(--status-success) !important;
+    }
+
+    .text-danger {
+        color: var(--status-danger) !important;
+    }
+
+    .text-warning {
+        color: var(--status-warning) !important;
+    }
+
+    .text-info {
+        color: #4a90e2 !important;
+    }
+
+    /* A consistent info blue */
+    .text-muted {
+        color: #9aa0a6 !important;
+    }
+
+
+    /* --- Component-Specific Styles --- */
+
+    /* Navbar */
+    .navbar.sticky {
+        background-color: var(--card-bg-color) !important;
+        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.3) !important;
+    }
+
+    .navbar .nav-link,
+    .navbar-brand {
+        color: var(--primary-text-color) !important;
+    }
+
+    .navbar .nav-link.active {
+        color: var(--primary-btn-color) !important;
+        background-color: var(--primary-btn-bg) !important;
+    }
+
+    .navbar-brand svg {
+        color: var(--primary-btn-bg) !important;
+    }
+
+    .dropdown-menu {
+        background-color: var(--card-bg-color);
+        border: 1px solid var(--card-border-color);
+        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.3);
+    }
+
+    .dropdown-item {
+        color: var(--primary-text-color);
+    }
+
+    .dropdown-item:hover {
+        background-color: #3e3f42;
+    }
+
+    /* Cards */
+    .card,
+    .upload-card {
+        background-color: var(--card-bg-color);
+        color: var(--primary-text-color);
+        border: 1px solid var(--card-border-color);
+        box-shadow: 0 0.25rem 0.5rem rgba(0, 0, 0, 0.1);
+    }
+
+    .hero-section {
+        background-color: var(--background-color) !important;
+        color: var(--primary-text-color) !important;
+    }
+
+    /* Forms */
+    .form-control,
+    .form-select {
+        background-color: var(--input-bg-color);
+        color: var(--primary-text-color);
+        border: 1px solid var(--input-border-color);
+    }
+
+    .form-control::placeholder {
+        color: var(--input-placeholder-color);
+    }
+
+    .form-control:focus,
+    .form-select:focus {
+        background-color: var(--input-bg-color);
+        border-color: var(--primary-btn-bg);
+        color: var(--primary-text-color);
+        box-shadow: 0 0 0 0.25rem rgba(138, 180, 248, 0.25);
+    }
+
+    .input-group-text {
+        background-color: var(--input-bg-color);
+        color: var(--primary-text-color);
+        border: 1px solid var(--input-border-color);
+    }
+
+    /* Buttons */
+    .btn-primary {
+        background-color: var(--primary-btn-bg);
+        border-color: var(--primary-btn-bg);
+        color: var(--primary-btn-color);
+    }
+
+    .btn-primary:hover {
+        background-color: var(--primary-btn-hover-bg);
+        border-color: var(--primary-btn-hover-bg);
+    }
+
+    .btn-outline-primary {
+        color: var(--outline-btn-color);
+        border-color: var(--outline-btn-color);
+    }
+
+    .btn-outline-primary:hover {
+        background-color: var(--outline-btn-color);
+        color: var(--primary-btn-color);
+    }
+}

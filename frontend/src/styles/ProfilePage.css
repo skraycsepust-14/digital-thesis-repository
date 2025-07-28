@@ -1,0 +1,60 @@
+/* frontend/src/styles/ProfilePage.css */
+
+.profile-card {
+    border: none;
+    border-radius: 15px;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+    background: linear-gradient(145deg, #ffffff, #f0f2f5);
+    padding: 3rem;
+}
+
+.profile-header {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.profile-header .fa-user-circle {
+    color: #007bff;
+    font-size: 5rem;
+    margin-bottom: 0.5rem;
+}
+
+.profile-header h2 {
+    font-size: 2rem;
+    font-weight: 300;
+    color: #343a40;
+}
+
+.profile-details {
+    padding: 0;
+    list-style: none;
+}
+
+.profile-details li {
+    display: flex;
+    align-items: center;
+    padding: 1.25rem 1rem;
+    border-bottom: 1px solid #e9ecef;
+    font-size: 1.1rem;
+}
+
+.profile-details li:last-child {
+    border-bottom: none;
+}
+
+.profile-details .fa-icon {
+    color: #6c757d;
+    margin-right: 1.5rem;
+    width: 20px;
+}
+
+.profile-details .detail-label {
+    font-weight: 600;
+    color: #495057;
+    width: 120px;
+    /* Aligns the labels */
+}
+
+.profile-details .detail-value {
+    color: #6c757d;
+}

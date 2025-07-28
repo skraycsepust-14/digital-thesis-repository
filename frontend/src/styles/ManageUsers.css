@@ -1,0 +1,50 @@
+/* frontend/src/styles/ManageUsers.css */
+
+.user-management-container {
+    background-color: #f8f9fa;
+    /* Light gray background */
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    /* Subtle shadow */
+    padding: 30px;
+}
+
+.user-management-header {
+    font-size: 2rem;
+    font-weight: 300;
+    color: #495057;
+    /* Darker text color */
+}
+
+.user-management-table thead th {
+    background-color: #e9ecef;
+    /* Slightly darker header background */
+    color: #495057;
+    border-bottom: 2px solid #dee2e6;
+    font-weight: 600;
+}
+
+.user-management-table tbody tr {
+    transition: background-color 0.2s ease-in-out;
+}
+
+.user-management-table tbody tr:hover {
+    background-color: #e2e6ea;
+    /* Lighter background on hover */
+}
+
+.user-management-table td,
+.user-management-table th {
+    vertical-align: middle;
+}
+
+.role-select {
+    width: 150px;
+    font-size: 0.9rem;
+}
+
+.role-badge {
+    min-width: 80px;
+    text-align: center;
+    font-weight: 500;
+}

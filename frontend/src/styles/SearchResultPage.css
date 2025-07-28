@@ -1,0 +1,107 @@
+/* frontend/src/styles/SearchResultPage.css */
+
+.search-results-page {
+    padding: 20px;
+    background-color: #f8f9fa;
+    /* Light background for the page */
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    margin-bottom: 30px;
+    /* Add some space below the results section */
+}
+
+.search-results-page h2 {
+    color: #007bff;
+    /* Primary color for headings */
+    margin-bottom: 25px;
+    font-weight: 600;
+    text-align: center;
+}
+
+.search-results-page .list-group-item {
+    background-color: #ffffff;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    margin-bottom: 15px;
+    padding: 20px;
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+.search-results-page .list-group-item:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
+}
+
+.search-results-page .list-group-item h5 {
+    font-size: 1.25rem;
+    color: #343a40;
+    /* Darker text for titles */
+    margin-bottom: 8px;
+}
+
+.search-results-page .list-group-item p {
+    font-size: 0.95rem;
+    color: #6c757d;
+    /* Muted text for details */
+    margin-bottom: 5px;
+}
+
+.search-results-page .list-group-item small {
+    font-size: 0.85rem;
+    color: #28a745;
+    /* Green for relevance score */
+    font-weight: 500;
+}
+
+/* Styling for alert messages within the search results context */
+.search-results-page .alert {
+    margin-top: 20px;
+    margin-bottom: 20px;
+    border-radius: 8px;
+    font-size: 1.1rem;
+    padding: 15px 20px;
+}
+
+.search-results-page .alert-info {
+    background-color: #e0f7fa;
+    color: #007bff;
+    border-color: #b2ebf2;
+}
+
+.search-results-page .alert-danger {
+    background-color: #ffebee;
+    color: #dc3545;
+    border-color: #ffcdd2;
+}
+
+.search-results-page .alert-warning {
+    background-color: #fff3e0;
+    color: #ffc107;
+    border-color: #ffe0b2;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .search-results-page {
+        padding: 15px;
+        margin-bottom: 20px;
+    }
+
+    .search-results-page h2 {
+        font-size: 1.8rem;
+        margin-bottom: 20px;
+    }
+
+    .search-results-page .list-group-item {
+        padding: 15px;
+    }
+
+    .search-results-page .list-group-item h5 {
+        font-size: 1.1rem;
+    }
+
+    .search-results-page .list-group-item p,
+    .search-results-page .list-group-item small {
+        font-size: 0.9rem;
+    }
+}

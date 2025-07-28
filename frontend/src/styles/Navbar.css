@@ -1,0 +1,222 @@
+/* frontend/src/styles/Navbar.css */
+
+/* --- Default Light Theme Styles --- */
+
+/* Base navbar styling. The navbar starts as 'transparent' and becomes 'sticky' on scroll. */
+.navbar {
+    transition: all 0.3s ease-in-out;
+    padding: 1.5rem 0;
+    z-index: 1000;
+}
+
+/* Transparent State (initial, before scroll) */
+.navbar.transparent {
+    background-color: transparent;
+    box-shadow: none;
+}
+
+/* Sticky State (after scroll) */
+.navbar.sticky {
+    position: fixed;
+    /* Key: Makes the navbar stick to the viewport */
+    top: 0;
+    /* Key: Positions it at the very top */
+    width: 100%;
+    /* Key: Ensures it spans the full width */
+    background-color: #ffffff;
+    padding: 0.75rem 0;
+    box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.08);
+}
+
+/* Navbar Brand & Links */
+.navbar-brand {
+    font-weight: 700;
+    color: #4f5a65;
+    transition: color 0.3s ease-in-out;
+}
+
+.navbar.transparent .navbar-brand svg {
+    color: #007bff;
+    /* Always visible blue icon */
+}
+
+.navbar.sticky .navbar-brand {
+    color: #4f5a65;
+}
+
+.navbar.sticky .navbar-brand svg {
+    color: #007bff;
+}
+
+.nav-link {
+    color: #4f5a65;
+    font-weight: 500;
+    margin-right: 0.5rem;
+    padding: 0.5rem 1rem !important;
+    border-radius: 0.5rem;
+    transition: all 0.3s ease;
+}
+
+.nav-link:hover {
+    color: #007bff;
+}
+
+.nav-link.active {
+    color: #fff;
+    background-color: #007bff;
+}
+
+/* Buttons for Login/Register */
+.navbar .btn-outline-primary {
+    color: #007bff;
+    border-color: #007bff;
+    background-color: transparent;
+}
+
+.navbar .btn-primary {
+    color: #fff;
+    background-color: #007bff;
+    border-color: #007bff;
+}
+
+/* Dropdown Menu */
+.dropdown-menu {
+    border: 1px solid #e9ecef;
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.1);
+    background-color: #ffffff;
+}
+
+.dropdown-item {
+    color: #4f5a65;
+    transition: background-color 0.2s ease;
+}
+
+.dropdown-item:hover,
+.dropdown-item:focus {
+    background-color: #f8f9fa;
+    color: #007bff;
+}
+
+.dropdown-divider {
+    border-top-color: #e9ecef;
+}
+
+/* Search Form */
+.navbar-collapse .input-group-text {
+    background-color: #ffffff;
+    border-color: #dee2e6;
+    color: #adb5bd;
+}
+
+.navbar-collapse .form-control {
+    background-color: #ffffff;
+    border-color: #dee2e6;
+    color: #495057;
+}
+
+.navbar-collapse .form-control::placeholder {
+    color: #adb5bd;
+}
+
+/* Mobile Toggler */
+.navbar-toggler {
+    border: none;
+}
+
+.navbar-toggler-icon {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba%280, 0, 0, 0.55%29' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
+}
+
+
+/* --- Dark Theme Overrides (nested under .dark-theme) --- */
+
+.dark-theme .navbar.sticky {
+    background-color: #2e2f33;
+    /* Dark sticky background */
+    box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.3);
+}
+
+.dark-theme .navbar.transparent .nav-link,
+.dark-theme .navbar.transparent .navbar-brand {
+    color: #e8eaed;
+    /* Light text for visibility */
+}
+
+.dark-theme .navbar.transparent .navbar-brand svg {
+    color: #8ab4f8;
+    /* Gemini blue for the icon */
+}
+
+.dark-theme .navbar.sticky .nav-link,
+.dark-theme .navbar.sticky .navbar-brand {
+    color: #e8eaed;
+}
+
+.dark-theme .navbar.sticky .navbar-brand svg {
+    color: #8ab4f8;
+}
+
+.dark-theme .nav-link:hover {
+    color: #8ab4f8;
+}
+
+.dark-theme .nav-link.active {
+    color: #202124;
+    background-color: #8ab4f8;
+}
+
+/* Buttons for Login/Register */
+.dark-theme .btn-outline-primary {
+    color: #8ab4f8;
+    border-color: #8ab4f8;
+    background-color: transparent;
+}
+
+.dark-theme .btn-primary {
+    background-color: #8ab4f8;
+    border-color: #8ab4f8;
+    color: #202124;
+}
+
+/* Dropdown Menu */
+.dark-theme .dropdown-menu {
+    border: 1px solid #5f6368;
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.3);
+    background-color: #202124;
+}
+
+.dark-theme .dropdown-item {
+    color: #e8eaed;
+}
+
+.dark-theme .dropdown-item:hover,
+.dark-theme .dropdown-item:focus {
+    background-color: #3e3f42;
+    color: #8ab4f8;
+}
+
+/* Search Form */
+.dark-theme .navbar-collapse .input-group-text {
+    background-color: #3e3f42;
+    border-color: #5f6368;
+    color: #9aa0a6;
+}
+
+.dark-theme .navbar-collapse .form-control {
+    background-color: #3e3f42;
+    border-color: #5f6368;
+    color: #e8eaed;
+}
+
+.dark-theme .navbar-collapse .form-control::placeholder {
+    color: #9aa0a6;
+}
+
+/* Mobile Toggler */
+.dark-theme .navbar-toggler-icon {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba%28232, 234, 237, 0.75%29' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
+}
+
+.dark-theme .navbar.sticky .navbar-toggler-icon {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba%28232, 234, 237, 0.75%29' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
+}
