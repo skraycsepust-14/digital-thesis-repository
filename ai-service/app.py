@@ -36,10 +36,9 @@ app = Flask(__name__)
 CORS(app) # Enable CORS for your frontend
 
 # --- New MongoDB Setup ---
-MONGO_URI="mongodb+srv://shuvokumerraycse10:ZHQCNdl28SLEzjqe@cluster0.0doar1z.mongodb.net/digi-thesis_DB?retryWrites=true&w=majority&appName=Cluster0"
-DB_NAME = "digi-thesis_DB" # Corrected: Your database name from the screenshot
-COLLECTION_NAME = "theses" # The collection where your theses are stored
-
+MONGO_URI = os.environ.get("MONGO_URI", "mongodb+srv://shuvokumerraycse10:ZHQCNdl28SLEzjqe@cluster0.0doar1z.mongodb.net/digi-thesis_DB?retryWrites=true&w=majority&appName=Cluster0")
+DB_NAME = os.environ.get("DB_NAME", "digi-thesis_DB")
+COLLECTION_NAME = os.environ.get("COLLECTION_NAME", "theses")
 client = None
 db = None
 
