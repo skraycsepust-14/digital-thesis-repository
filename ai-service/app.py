@@ -1,3 +1,5 @@
+# app.py (Updated: Added GET /theses/<id> endpoint with detailed logging, fixed KeyError in recommendations)
+
 import spacy
 from textblob import TextBlob
 from flask import Flask, request, jsonify
@@ -12,31 +14,15 @@ import os
 import json
 # New imports for MongoDB
 from pymongo import MongoClient
-from bson.objectid import ObjectId
+from bson.objectid import ObjectId # Import ObjectId for MongoDB ID handling
+from bson.errors import InvalidId # Import InvalidId for handling bad MongoDB IDs
 
 # NEW IMPORTS FOR AI FEATURES
 import textstat # For Readability Score
-from gensim import corpora, models # For Topic Modeling
-from nltk.corpus import stopwords # For Topic Modeling preprocessing
-from nltk.stem import WordNetLemmatizer # For Topic Modeling preprocessing
-import re # For text cleaning
+
 
 # Load the spaCy and TextBlob models
 nlp = spacy.load("en_core_web_sm")
-
-# Initialize NLTK components for topic modeling
-try:
-    stop_words = set(stopwords.words('english'))
-    lemmatizer = WordNetLemmatizer()
-    print("NLTK stopwords and lemmatizer loaded.")
-except LookupError:
-    print("NLTK data not found. Downloading 'stopwords' and 'wordnet'...")
-    import nltk
-    nltk.download('stopwords')
-    nltk.download('wordnet')
-    stop_words = set(stopwords.words('english'))
-    lemmatizer = WordNetLemmatizer()
-    print("NLTK data downloaded and loaded.")
 
 
 # Initialize LanguageTool for grammar checking
@@ -50,7 +36,7 @@ app = Flask(__name__)
 CORS(app) # Enable CORS for your frontend
 
 # --- New MongoDB Setup ---
-MONGO_URI = "mongodb://localhost:27017/" # Your MongoDB connection string
+MONGO_URI="mongodb+srv://shuvokumerraycse10:ZHQCNdl28SLEzjqe@cluster0.0doar1z.mongodb.net/digi-thesis_DB?retryWrites=true&w=majority&appName=Cluster0"
 DB_NAME = "digi-thesis_DB" # Corrected: Your database name from the screenshot
 COLLECTION_NAME = "theses" # The collection where your theses are stored
 
@@ -133,24 +119,27 @@ def fetch_data_from_db(include_full_text=False): # Added include_full_text param
             return [], []
 
         # Project only necessary fields. If include_full_text is true, also get 'full_text'
+        # For recommendations, getting the abstract is usually sufficient to generate an embedding.
+        # However, if 'full_text' offers richer context, you might include it.
+        # For now, let's ensure 'abstract' and '_id' are always retrieved for recommendation.
         projection = {'abstract': 1, 'title': 1, 'authorName': 1, '_id': 1}
         if include_full_text:
-            projection['full_text'] = 1 # Assuming you have a 'full_text' field
+            projection['full_text'] = 1
             
         db_documents = theses_collection.find({}, projection)
         
         for doc in db_documents:
             text_for_embedding = doc.get('abstract', '')
             if include_full_text and doc.get('full_text'):
-                # For topic modeling, using a combination or full text is better
-                text_for_embedding = doc['full_text'] # Use full text for topic modeling if available
+                text_for_embedding = doc['full_text']
 
             if text_for_embedding:
                 documents.append(text_for_embedding)
                 metadata_list.append({
                     'id': str(doc['_id']),
                     'title': doc.get('title', 'No Title'),
-                    'author': doc.get('authorName', 'Unknown Author')
+                    'author': doc.get('authorName', 'Unknown Author'),
+                    'abstract': doc.get('abstract', '') # Include abstract for display in recommendations
                 })
         print(f"Fetched {len(documents)} documents from MongoDB.")
         return documents, metadata_list
@@ -164,7 +153,8 @@ def initial_data_ingestion():
     global faiss_index, thesis_data
     
     # Fetch data from MongoDB instead of using dummy data
-    # We use only abstracts for semantic search index to keep it lightweight
+    # We use only abstracts for semantic search index to keep it lightweight.
+    # For recommendations, abstracts are generally good enough.
     documents, metadata_list = fetch_data_from_db(include_full_text=False)
 
     if not documents:
@@ -179,17 +169,7 @@ if not load_index():
     initial_data_ingestion()
 
 
-# --- Text Preprocessing for Topic Modeling ---
-def preprocess_text_for_topic_modeling(text):
-    # Remove special characters and numbers
-    text = re.sub(r'[^a-zA-Z\s]', '', text)
-    # Tokenize and lemmatize using spaCy, remove stopwords
-    doc = nlp(text.lower())
-    tokens = [
-        token.lemma_ for token in doc 
-        if token.is_alpha and token.lemma_ not in stop_words and len(token.lemma_) > 2
-    ]
-    return tokens
+# Removed: --- Text Preprocessing for Topic Modeling ---
 
 
 # Define the analysis endpoint (existing)
@@ -272,13 +252,6 @@ def check_plagiarism():
             return jsonify({'error': 'No text provided for plagiarism check.'}), 400
 
         # --- CONCEPTUAL PLAGIARISM CHECK ---
-        # In a real application, you would compare 'text_to_check' against:
-        # 1. A database of existing theses/documents (your MongoDB collection)
-        # 2. Public web content (requires web scraping or specialized APIs)
-        # 3. Academic databases (requires subscriptions/APIs)
-
-        # For this demo, we'll use a hardcoded "known text" to simulate a match.
-        # This is NOT a real plagiarism checker.
         known_texts = [
             "The quick brown fox jumps over the lazy dog.",
             "Machine learning is a field of study that gives computers the ability to learn without being explicitly programmed. It is a subset of artificial intelligence.",
@@ -358,6 +331,150 @@ def semantic_search():
         app.logger.error(f"Error in /semantic-search endpoint: {e}", exc_info=True)
         return jsonify({'error': 'Internal server error during semantic search.'}), 500
 
+# --- NEW AI FEATURE: Recommendation System Endpoint ---
+@app.route('/recommend-theses', methods=['POST'])
+def recommend_theses():
+    try:
+        data = request.get_json()
+        thesis_id = data.get('thesis_id')
+        top_k = data.get('top_k', 5) # Number of recommendations to return
+
+        if not thesis_id:
+            return jsonify({'error': 'No thesis_id provided for recommendation.'}), 400
+        
+        if db is None:
+            return jsonify({'error': 'MongoDB connection not available. Cannot recommend theses.'}), 500
+        
+        if faiss_index is None or not thesis_data:
+            return jsonify({'error': 'Recommendation index not initialized. Please check server logs.'}), 500
+
+        theses_collection = db[COLLECTION_NAME]
+        
+        # 1. Fetch the target thesis's content from MongoDB
+        try:
+            target_thesis = theses_collection.find_one({'_id': ObjectId(thesis_id)}, {'abstract': 1, 'full_text': 1})
+        except InvalidId: # Catch specific exception for invalid ID format
+            return jsonify({'error': 'Invalid thesis ID format.'}), 400
+        except Exception:
+            return jsonify({'error': 'Database error when fetching target thesis.'}), 500
+
+
+        if not target_thesis:
+            return jsonify({'error': 'Target thesis not found in the database.'}), 404
+
+        # Prioritize full_text if available, otherwise use abstract for embedding
+        target_text = target_thesis.get('full_text') or target_thesis.get('abstract', '')
+        
+        if not target_text:
+            return jsonify({'error': 'Target thesis has no content to generate recommendations.'}), 400
+
+        # 2. Generate embedding for target thesis
+        target_embedding = search_model.encode([target_text])
+        target_embedding = np.array(target_embedding).astype('float32')
+
+        # 3. Perform search on FAISS index
+        # We search for top_k + 1 to account for the possibility of the target thesis itself being in the results
+        distances, indices = faiss_index.search(target_embedding, top_k + 1)
+        
+        recommended_theses = []
+        target_mongo_id_str = str(thesis_id) # Convert to string for comparison
+
+        # 4. Format results and filter out the target thesis
+        for i, idx in enumerate(indices[0]):
+            document_metadata = thesis_data[idx]
+            
+            # Ensure we don't recommend the thesis itself
+            if str(document_metadata['id']) != target_mongo_id_str:
+                recommended_theses.append({
+                    'id': document_metadata['id'], # Already a string from initial ingestion
+                    'title': document_metadata['title'],
+                    'author': document_metadata['author'],
+                    # FIX: Use .get() here to prevent KeyError if 'abstract' is missing in some metadata entries
+                    'abstract': document_metadata.get('abstract', 'No abstract available'), 
+                    'similarity_score': float(distances[0][i]) # Lower distance = higher similarity
+                })
+            
+            # Stop if we have enough unique recommendations
+            if len(recommended_theses) >= top_k:
+                break
+        
+        # Sort by similarity score (lowest distance first for IndexFlatL2)
+        recommended_theses.sort(key=lambda x: x['similarity_score'])
+
+        return jsonify({'recommendations': recommended_theses})
+
+    except Exception as e:
+        app.logger.error(f"Error in /recommend-theses endpoint: {e}", exc_info=True)
+        return jsonify({'error': 'Internal server error during recommendation.'}), 500
+
+# --- NEW: Endpoint to fetch a single thesis by ID ---
+@app.route('/theses/<string:thesis_id>', methods=['GET'])
+def get_thesis_by_id(thesis_id):
+    try:
+        # --- ADDED LOGGING START ---
+        app.logger.info(f"Received request for thesis ID: {thesis_id}")
+        if db is None:
+            app.logger.error("MongoDB connection object 'db' is None in get_thesis_by_id. This should not happen if connection was successful.")
+            return jsonify({'error': 'MongoDB connection not available.'}), 500
+
+        theses_collection = db[COLLECTION_NAME]
+        app.logger.info(f"Attempting to query collection: {theses_collection.full_name}")
+        # --- ADDED LOGGING END ---
+        
+        try:
+            # Convert the string ID from the URL to a MongoDB ObjectId
+            object_id = ObjectId(thesis_id)
+            # --- ADDED LOGGING START ---
+            app.logger.info(f"Successfully converted ID to ObjectId: {object_id}")
+            # --- ADDED LOGGING END ---
+        except InvalidId:
+            # --- ADDED LOGGING START ---
+            app.logger.error(f"Invalid thesis ID format received: {thesis_id}. Returning 400.")
+            # --- ADDED LOGGING END ---
+            return jsonify({'error': 'Invalid thesis ID format.'}), 400
+
+        # Fetch the document by its _id.
+        # Project all necessary fields for the ThesisDetailPage.jsx
+        thesis = theses_collection.find_one(
+            {'_id': object_id},
+            {
+                '_id': 1, 
+                'title': 1, 
+                'authorName': 1, 
+                'abstract': 1, 
+                'publicationDate': 1, 
+                'keywords': 1, 
+                'full_text': 1,
+                'department': 1,    # Added
+                'submissionYear': 1,  # Added
+                'status': 1,          # Added
+                'analysisStatus': 1,  # Added for AI Analysis Section
+                'aiSummary': 1,       # Added for AI Analysis Section
+                'aiKeywords': 1,      # Added for AI Analysis Section
+                'aiSentiment': 1,      # Added for AI Analysis Section
+                'filePath': 1          # Added for Download PDF link
+            }
+        )
+        
+        # --- ADDED LOGGING START ---
+        if thesis:
+            app.logger.info(f"Found thesis with ID {object_id}. Title: {thesis.get('title', 'N/A')}")
+        else:
+            app.logger.warning(f"find_one returned None for thesis ID: {object_id}. Thesis not found in database for this query.")
+        # --- ADDED LOGGING END ---
+
+        if not thesis:
+            return jsonify({'error': 'Thesis not found.'}), 404
+        
+        # Convert ObjectId to string for JSON serialization
+        thesis['_id'] = str(thesis['_id'])
+        
+        return jsonify(thesis)
+
+    except Exception as e:
+        app.logger.error(f"An unexpected error occurred in /theses/<id> endpoint for ID {thesis_id}: {e}", exc_info=True)
+        return jsonify({'error': 'Internal server error fetching thesis details.'}), 500
+
 # --- NEW AI FEATURE: Readability Score Analysis ---
 @app.route('/readability', methods=['POST'])
 def get_readability_scores():
@@ -390,65 +507,52 @@ def get_readability_scores():
         app.logger.error(f"Error in /readability endpoint: {e}", exc_info=True)
         return jsonify({'error': 'Internal server error during readability analysis.'}), 500
 
-# --- NEW AI FEATURE: Topic Modeling ---
-@app.route('/topic-modeling', methods=['GET']) # Using GET as it analyzes the collection, not specific input
-def perform_topic_modeling():
+
+# --- NEW AI FEATURE: Automated Tagging / Keyword Suggestion (Conceptual) ---
+# This is a conceptual example. In a real scenario, you'd train an ML model.
+PREDEFINED_TAGS = {
+    "Artificial Intelligence": ["ai", "machine learning", "deep learning", "neural network", "computer vision", "nlp", "natural language processing", "robotics"],
+    "Computer Science": ["algorithm", "data structure", "software engineering", "programming", "cybersecurity", "networking", "database"],
+    "Engineering": ["electrical engineering", "mechanical engineering", "civil engineering", "aerospace engineering", "materials science", "robotics"],
+    "Environmental Science": ["climate change", "sustainability", "ecology", "pollution", "conservation", "renewable energy"],
+    "Medical Science": ["medicine", "biology", "biotechnology", "genetics", "pharmaceuticals", "public health", "disease"],
+    "Social Science": ["sociology", "psychology", "economics", "political science", "anthropology", "education"],
+    "Mathematics": ["algebra", "calculus", "statistics", "geometry", "numerical analysis", "optimization"],
+    "Physics": ["quantum physics", "astrophysics", "thermodynamics", "optics", "mechanics"],
+    "Chemistry": ["organic chemistry", "inorganic chemistry", "biochemistry", "analytical chemistry", "materials chemistry"]
+}
+
+@app.route('/suggest-tags', methods=['POST'])
+def suggest_tags():
     try:
-        # Fetch abstracts or full texts from all theses for topic modeling
-        # We'll use full_text if available, otherwise abstract, as it yields better topics
-        all_thesis_texts, _ = fetch_data_from_db(include_full_text=True)
+        data = request.get_json()
+        text = data.get('text', '')
 
-        if not all_thesis_texts:
-            return jsonify({'message': 'No theses available for topic modeling.'}), 200
+        if not text:
+            return jsonify({'error': 'No text provided for tag suggestion.'}), 400
 
-        # Preprocess texts
-        processed_texts = [preprocess_text_for_topic_modeling(text) for text in all_thesis_texts]
+        text_lower = text.lower()
+        suggested = []
+
+        for tag, keywords in PREDEFINED_TAGS.items():
+            # Check if any of the keywords for a tag are present in the text
+            # A more robust approach would use NLP features like TF-IDF or embeddings
+            if any(keyword in text_lower for keyword in keywords):
+                suggested.append(tag)
         
-        # Remove empty processed texts
-        processed_texts = [text for text in processed_texts if text]
+        if not suggested:
+            # If no direct keyword matches, use spaCy to find noun chunks as general tags
+            doc = nlp(text)
+            fallback_keywords = list(set([chunk.text.lower() for chunk in doc.noun_chunks]))
+            # Limit fallback keywords to a reasonable number
+            suggested.extend([kw.title() for kw in fallback_keywords[:5] if len(kw) > 2])
 
-        if not processed_texts:
-            return jsonify({'message': 'No valid texts found after preprocessing for topic modeling.'}), 200
 
-        # Create a dictionary from the processed texts
-        dictionary = corpora.Dictionary(processed_texts)
-        
-        # Filter out very rare or very common words
-        dictionary.filter_extremes(no_below=5, no_above=0.5)
-        
-        # Create a Bag-of-Words corpus
-        corpus = [dictionary.doc2bow(text) for text in processed_texts]
-
-        # Ensure corpus is not empty after filtering
-        if not corpus:
-            return jsonify({'message': 'Corpus is empty after filtering words for topic modeling.'}), 200
-
-        # Train the LDA model
-        # You can adjust num_topics based on what you expect
-        num_topics = 5 # Example: Looking for 5 main topics
-        lda_model = models.LdaMulticore(
-            corpus=corpus,
-            id2word=dictionary,
-            num_topics=num_topics,
-            random_state=100,
-            chunksize=100,
-            passes=10,
-            per_word_topics=True
-        )
-
-        # Get the top topics
-        topics_output = []
-        for idx, topic in lda_model.print_topics(-1, num_words=5): # Show top 5 words per topic
-            topics_output.append({
-                'id': idx,
-                'words': topic
-            })
-            
-        return jsonify({'topics': topics_output})
+        return jsonify({'suggested_tags': suggested})
 
     except Exception as e:
-        app.logger.error(f"Error in /topic-modeling endpoint: {e}", exc_info=True)
-        return jsonify({'error': f'Internal server error during topic modeling: {str(e)}'}), 500
+        app.logger.error(f"Error in /suggest-tags endpoint: {e}", exc_info=True)
+        return jsonify({'error': 'Internal server error during tag suggestion.'}), 500
 
 
 if __name__ == '__main__':

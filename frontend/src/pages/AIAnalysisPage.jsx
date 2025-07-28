@@ -1,19 +1,23 @@
-// frontend/src/pages/AIAnalysisPage.jsx
+// frontend/src/pages/AIAnalysisPage.jsx (Updated: Compact "Back to Home" link)
 import React, { useState } from 'react';
 import axios from 'axios';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faBrain, faTools, faChartLine, faTags, faBookReader, faSpinner } from '@fortawesome/free-solid-svg-icons';
+import { faBrain, faTools, faChartLine, faBookReader, faSpinner, faLightbulb } from '@fortawesome/free-solid-svg-icons';
 import { Link } from 'react-router-dom';
 
 const AIAnalysisPage = () => {
+    // State for Readability Analysis
     const [readabilityText, setReadabilityText] = useState('');
     const [readabilityResults, setReadabilityResults] = useState(null);
     const [readabilityLoading, setReadabilityLoading] = useState(false);
     const [readabilityError, setReadabilityError] = useState('');
 
-    const [topics, setTopics] = useState([]);
-    const [topicModelingLoading, setTopicModelingLoading] = useState(false);
-    const [topicModelingError, setTopicModelingError] = useState('');
+    // State for Automated Tagging
+    const [taggingText, setTaggingText] = useState('');
+    const [suggestedTags, setSuggestedTags] = useState([]);
+    const [taggingLoading, setTaggingLoading] = useState(false);
+    const [taggingError, setTaggingError] = useState('');
+
 
     const FLASK_API_URL = "http://localhost:5002"; // Your Flask backend URL
 
@@ -33,37 +37,35 @@ const AIAnalysisPage = () => {
         }
     };
 
-    // --- Topic Modeling Functions ---
-    const handleTopicModeling = async () => {
-        setTopicModelingLoading(true);
-        setTopics([]);
-        setTopicModelingError('');
+    // --- Automated Tagging Functions ---
+    const handleTagSuggestion = async () => {
+        setTaggingLoading(true);
+        setSuggestedTags([]);
+        setTaggingError('');
         try {
-            // Topic modeling analyzes the entire collection, so no specific input text is sent
-            const response = await axios.get(`${FLASK_API_URL}/topic-modeling`);
-            setTopics(response.data.topics || []); // Ensure it's an array
+            const response = await axios.post(`${FLASK_API_URL}/suggest-tags`, { text: taggingText });
+            setSuggestedTags(response.data.suggested_tags || []);
         } catch (error) {
-            console.error('Error fetching topics:', error);
-            setTopicModelingError('Failed to perform topic modeling. Please ensure theses are uploaded.');
+            console.error('Error suggesting tags:', error);
+            setTaggingError('Failed to suggest tags. Please try again.');
         } finally {
-            setTopicModelingLoading(false);
+            setTaggingLoading(false);
         }
     };
 
     return (
         <div className="container mt-5 py-5">
-            <div className="card shadow-lg p-5 mb-5 text-center">
-                <FontAwesomeIcon icon={faBrain} size="5x" className="text-primary mb-4" />
-                <h1 className="mb-3 fw-bold text-dark">AI Analysis Tools</h1>
-                <p className="lead text-muted mb-4">
-                    Explore advanced AI-powered tools for thesis analysis, summarization, and insights.
-                </p>
-                <div className="mt-4">
-                    <Link to="/" className="btn btn-outline-primary btn-lg">
-                        <FontAwesomeIcon icon={faTools} className="me-2" /> Back to Home
-                    </Link>
-                </div>
+            {/* START: Compact "Back to Home" link */}
+            <div className="d-flex justify-content-between align-items-center mb-4">
+                <h1 className="fw-bold text-dark m-0">AI Analysis Tools</h1>
+                <Link to="/" className="btn btn-outline-secondary">
+                    <FontAwesomeIcon icon={faTools} className="me-2" /> Back to Home
+                </Link>
             </div>
+            <p className="lead text-muted mb-5">
+                Explore advanced AI-powered tools for thesis analysis, summarization, and insights.
+            </p>
+            {/* END: Compact "Back to Home" link */}
 
             {/* Readability Analysis Section */}
             <div className="card shadow-sm p-4 mb-5">
@@ -127,40 +129,54 @@ const AIAnalysisPage = () => {
                 )}
             </div>
 
-            {/* Topic Modeling Section */}
-            <div className="card shadow-sm p-4">
+            {/* Automated Tagging / Keyword Suggestion Section */}
+            <div className="card shadow-sm p-4 mb-5">
                 <h3 className="mb-4 text-primary">
-                    <FontAwesomeIcon icon={faTags} className="me-2" /> Repository Topic Modeling
+                    <FontAwesomeIcon icon={faLightbulb} className="me-2" /> Automated Tagging / Keyword Suggestion
                 </h3>
                 <p className="text-muted">
-                    Discover the main themes and topics present across all submitted theses in the repository.
+                    Paste text (e.g., an abstract) to get suggested relevant tags or keywords based on predefined categories.
                 </p>
+                <div className="mb-3">
+                    <label htmlFor="taggingText" className="form-label">Enter text for tag suggestion:</label>
+                    <textarea
+                        className="form-control"
+                        id="taggingText"
+                        rows="6"
+                        value={taggingText}
+                        onChange={(e) => setTaggingText(e.target.value)}
+                        placeholder="Paste thesis abstract, summary, or full text here..."
+                    ></textarea>
+                </div>
                 <button
-                    className="btn btn-success w-100"
-                    onClick={handleTopicModeling}
-                    disabled={topicModelingLoading}
+                    className="btn btn-info w-100 text-white"
+                    onClick={handleTagSuggestion}
+                    disabled={taggingLoading || !taggingText.trim()}
                 >
-                    {topicModelingLoading ? (
+                    {taggingLoading ? (
                         <>
-                            <FontAwesomeIcon icon={faSpinner} spin className="me-2" /> Analyzing Topics...
+                            <FontAwesomeIcon icon={faSpinner} spin className="me-2" /> Suggesting Tags...
                         </>
                     ) : (
-                        "Generate Topics for Repository"
+                        "Suggest Tags"
                     )}
                 </button>
 
-                {topicModelingError && <div className="alert alert-danger mt-3">{topicModelingError}</div>}
+                {taggingError && <div className="alert alert-danger mt-3">{taggingError}</div>}
 
-                {topics.length > 0 && (
+                {suggestedTags.length > 0 && (
                     <div className="mt-4 p-3 bg-light rounded">
-                        <h5 className="text-secondary mb-3">Discovered Topics:</h5>
-                        <ul className="list-group">
-                            {topics.map((topic) => (
-                                <li key={topic.id} className="list-group-item">
-                                    <strong>Topic {topic.id + 1}:</strong> {topic.words}
-                                </li>
+                        <h5 className="text-secondary mb-3">Suggested Tags:</h5>
+                        <div className="d-flex flex-wrap">
+                            {suggestedTags.map((tag, index) => (
+                                <span key={index} className="badge bg-secondary me-2 mb-2 p-2 fs-6">
+                                    {tag}
+                                </span>
                             ))}
-                        </ul>
+                        </div>
+                        <p className="text-muted mt-3 small">
+                            Note: This is a conceptual suggestion based on keywords. For production, a trained ML model would be used.
+                        </p>
                     </div>
                 )}
             </div>
