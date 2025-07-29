@@ -1,0 +1,10 @@
+venv/
+__pycache__/
+*.pyc
+*.pyo
+.git/
+.gitignore
+.vscode/
+*.env
+thesis_index.faiss # Generated file, should not be part of the image
+thesis_metadata.json # Generated file, should not be part of the image

@@ -1,5 +1,3 @@
-# app.py (Updated: Added GET /theses/<id> endpoint with detailed logging, fixed KeyError in recommendations)
-
 import spacy
 from textblob import TextBlob
 from flask import Flask, request, jsonify
@@ -35,6 +33,11 @@ except Exception as e:
 app = Flask(__name__)
 CORS(app) # Enable CORS for your frontend
 
+# NEW: Add a root endpoint for a basic health check or welcome message
+@app.route('/')
+def home():
+    return "AI Service is running!" # You can customize this message
+
 # --- New MongoDB Setup ---
 MONGO_URI = os.environ.get("MONGO_URI", "mongodb+srv://shuvokumerraycse10:ZHQCNdl28SLEzjqe@cluster0.0doar1z.mongodb.net/digi-thesis_DB?retryWrites=true&w=majority&appName=Cluster0")
 DB_NAME = os.environ.get("DB_NAME", "digi-thesis_DB")
@@ -43,11 +46,16 @@ client = None
 db = None
 
 try:
-    client = MongoClient(MONGO_URI)
+    # ADDED: A 5-second timeout for server selection
+    client = MongoClient(MONGO_URI, serverSelectionTimeoutMS=5000)
+    # The ismaster command is cheap and does not require auth.
+    client.admin.command('ismaster')
     db = client[DB_NAME]
     print("Connected to MongoDB successfully.")
 except Exception as e:
-    print(f"Could not connect to MongoDB: {e}")
+    print(f"Could not connect to MongoDB. Error: {e}")
+    db = None # Ensure db is None if connection fails
+
 
 # --- AI Search Setup ---
 # The model that will convert text to vectors.
@@ -393,7 +401,6 @@ def recommend_theses():
                     'similarity_score': float(distances[0][i]) # Lower distance = higher similarity
                 })
             
-            # Stop if we have enough unique recommendations
             if len(recommended_theses) >= top_k:
                 break
         
@@ -444,14 +451,14 @@ def get_thesis_by_id(thesis_id):
                 'publicationDate': 1, 
                 'keywords': 1, 
                 'full_text': 1,
-                'department': 1,    # Added
-                'submissionYear': 1,  # Added
-                'status': 1,          # Added
-                'analysisStatus': 1,  # Added for AI Analysis Section
-                'aiSummary': 1,       # Added for AI Analysis Section
-                'aiKeywords': 1,      # Added for AI Analysis Section
+                'department': 1,     # Added
+                'submissionYear': 1,   # Added
+                'status': 1,           # Added
+                'analysisStatus': 1,   # Added for AI Analysis Section
+                'aiSummary': 1,      # Added for AI Analysis Section
+                'aiKeywords': 1,       # Added for AI Analysis Section
                 'aiSentiment': 1,      # Added for AI Analysis Section
-                'filePath': 1          # Added for Download PDF link
+                'filePath': 1            # Added for Download PDF link
             }
         )
         
