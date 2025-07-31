@@ -5,10 +5,6 @@ FROM python:3.11-slim
 # Set the working directory inside the container
 WORKDIR /app
 
-# Install system dependencies required for spaCy, LanguageTool, and building Python packages
-# default-jre-headless is for LanguageTool (it will install a compatible JRE for Debian Bookworm/Bullseye)
-# build-essential is for compiling some Python packages if they have C extensions
-# ADDED 'curl' for debugging purposes inside the container
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
     build-essential \
