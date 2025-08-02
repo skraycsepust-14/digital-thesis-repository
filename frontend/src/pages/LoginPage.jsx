@@ -1,35 +1,44 @@
-// frontend/src/pages/LoginPage.jsx
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-// Correct import: faGoogle from the 'brands' package, other icons from 'solid'
 import { faEnvelope, faLock, faEye, faEyeSlash, faSpinner, faKey } from '@fortawesome/free-solid-svg-icons';
 import { faGoogle } from '@fortawesome/free-brands-svg-icons';
-import Swal from 'sweetalert2'; // For elegant pop-ups
+import Snackbar from '../components/Snackbar'; // Import the new Snackbar component
 
 const LoginPage = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const [error, setError] = useState('');
     const [showPassword, setShowPassword] = useState(false);
 
-    // New state for handling loading indicators
+    // State for handling loading indicators
     const [isLoading, setIsLoading] = useState(false);
     const [isGoogleLoading, setIsGoogleLoading] = useState(false);
 
-    // Get the new functions from the context
+    // State for Snackbar notification
+    const [snackbar, setSnackbar] = useState({
+        show: false,
+        message: '',
+        type: 'info'
+    });
+
     const { login, loginWithGoogle, sendPasswordReset } = useAuth();
     const navigate = useNavigate();
 
+    const showSnackbar = (message, type) => {
+        setSnackbar({ show: true, message, type });
+    };
+
+    const handleSnackbarClose = () => {
+        setSnackbar({ ...snackbar, show: false });
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
-        setError('');
-        setIsLoading(true); // Set loading state to true
+        setIsLoading(true);
 
         try {
             const result = await login(email, password);
-            console.log('Login result:', result);
             if (result.success) {
                 console.log('User role:', result.user?.role);
                 if (result.user?.role === 'admin' || result.user?.role === 'supervisor') {
@@ -38,18 +47,17 @@ const LoginPage = () => {
                     navigate('/dashboard');
                 }
             } else {
-                setError(result.error || 'Login failed. Please check your credentials.');
+                showSnackbar(result.error || 'Login failed. Please check your credentials.', 'error');
             }
         } catch (err) {
-            setError('An unexpected error occurred. Please try again.');
+            showSnackbar('An unexpected error occurred. Please try again.', 'error');
         } finally {
-            setIsLoading(false); // Reset loading state
+            setIsLoading(false);
         }
     };
 
     const handleGoogleSignIn = async () => {
-        setError('');
-        setIsGoogleLoading(true); // Set loading state for Google button
+        setIsGoogleLoading(true);
 
         try {
             const result = await loginWithGoogle();
@@ -61,33 +69,25 @@ const LoginPage = () => {
                         navigate('/dashboard');
                 }
             } else {
-                setError(result.error || 'Google sign-in failed.');
+                showSnackbar(result.error || 'Google sign-in failed.', 'error');
             }
         } catch (err) {
-            setError('An unexpected error occurred during Google sign-in.');
+            showSnackbar('An unexpected error occurred during Google sign-in.', 'error');
         } finally {
-            setIsGoogleLoading(false); // Reset loading state
+            setIsGoogleLoading(false);
         }
     };
 
     const handleForgotPassword = async () => {
-        const { value: emailToReset } = await Swal.fire({
-            title: 'Forgot Password?',
-            input: 'email',
-            inputLabel: 'Enter your email address',
-            inputPlaceholder: 'Enter your email address...',
-            showCancelButton: true,
-            confirmButtonColor: '#3085d6',
-            cancelButtonColor: '#d33',
-            confirmButtonText: 'Send Reset Link'
-        });
+        // Use a simple prompt as Snackbar can't take user input
+        const emailToReset = prompt('Enter your email address to reset your password:');
     
         if (emailToReset) {
             const result = await sendPasswordReset(emailToReset);
             if (result.success) {
-                Swal.fire('Success', result.message, 'success');
+                showSnackbar(result.message, 'success');
             } else {
-                Swal.fire('Error', result.error, 'error');
+                showSnackbar(result.error, 'error');
             }
         }
     };
@@ -102,11 +102,6 @@ const LoginPage = () => {
                 <div className="col-md-6 col-lg-4">
                     <div className="card shadow-sm p-4">
                         <h2 className="card-title text-center mb-4">Login</h2>
-                        {error && (
-                            <div className="alert alert-danger" role="alert">
-                                {error}
-                            </div>
-                        )}
                         <form onSubmit={handleSubmit}>
                             <div className="mb-3">
                                 <label htmlFor="email" className="form-label">
@@ -156,7 +151,6 @@ const LoginPage = () => {
                                     </button>
                                 </div>
                             </div>
-                            {/* Moved the Forgot Password link to be before the Login button */}
                             <div className="d-flex justify-content-end mb-3">
                                 <Link to="#" className="text-decoration-none" onClick={handleForgotPassword}>
                                     <FontAwesomeIcon icon={faKey} className="me-1" /> Forgot Password?
@@ -174,13 +168,11 @@ const LoginPage = () => {
                                 </button>
                             </div>
                         </form>
-                        {/* 'Or' separator */}
                         <div className="d-flex align-items-center my-3">
                             <hr className="flex-grow-1" />
                             <span className="mx-2 text-muted">Or</span>
                             <hr className="flex-grow-1" />
                         </div>
-                        {/* New Google Sign-In Button */}
                         <div className="text-center">
                             <button
                                 className="btn btn-outline-danger w-100"
@@ -198,7 +190,6 @@ const LoginPage = () => {
                                 )}
                             </button>
                         </div>
-                        {/* Registration link moved to the bottom */}
                         <p className="text-center mt-3 mb-0">
                             Don't have an account?{' '}
                             <Link to="/register" className="text-decoration-none">
@@ -208,6 +199,13 @@ const LoginPage = () => {
                     </div>
                 </div>
             </div>
+            {snackbar.show && (
+                <Snackbar
+                    message={snackbar.message}
+                    type={snackbar.type}
+                    onClose={handleSnackbarClose}
+                />
+            )}
         </div>
     );
 };

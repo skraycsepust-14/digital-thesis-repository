@@ -14,12 +14,20 @@ module.exports = async function (req, res, next) {
     try {
         // FIRST: Try to verify the token with your custom JWT secret
         const decoded = jwt.verify(token, config.get('jwtSecret'));
+        
+        // Add a check to ensure the decoded token contains a user with a role
+        if (!decoded.user || !decoded.user.role) {
+            console.error('Custom JWT token is missing user or role information.');
+            return res.status(401).json({ msg: 'Token is not valid: User role not found' });
+        }
+        
         req.user = decoded.user;
         return next(); // If successful, move on
     } catch (jwtErr) {
         // If custom JWT verification fails, try to verify with Firebase Admin SDK
         try {
             const decodedToken = await admin.auth().verifyIdToken(token);
+            
             // If the Firebase token is valid, create a user object for your routes
             req.user = {
                 id: decodedToken.uid,

@@ -1,30 +1,38 @@
 // frontend/src/pages/AdminDashboardPage.jsx
+
+// This component is the admin dashboard where administrators and supervisors can
+// approve or reject pending theses. It fetches pending theses from a protected
+// backend endpoint and provides buttons to perform actions on them.
+
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faFileAlt, faClock, faCheckCircle, faTimesCircle } from '@fortawesome/free-solid-svg-icons';
+import { faFileAlt, faClock, faCheckCircle, faTimesCircle, faSpinner } from '@fortawesome/free-solid-svg-icons';
 import { useNavigate } from 'react-router-dom';
+// Import the new API functions from thesisApi.js
+import { getPendingTheses, updateThesisStatus } from '../api/thesisApi';
 
 const AdminDashboardPage = () => {
+    // State to store the list of pending theses
     const [pendingTheses, setPendingTheses] = useState([]);
+    
+    // State for loading and error handling
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    
+    // State to disable buttons during submission to prevent multiple clicks
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    // FIX: Import 'token' from useAuth hook
+    // Get user and authentication token from the AuthContext
     const { user, token } = useAuth();
     const navigate = useNavigate();
 
+    // Function to fetch pending theses from the backend using the new API function
     const fetchPendingTheses = async () => {
         try {
-            // FIX: Use the imported 'token' variable
-            const response = await axios.get('http://localhost:5000/api/theses/pending', {
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                },
-            });
-            setPendingTheses(response.data);
+            // Call the new API function with the token
+            const theses = await getPendingTheses(token);
+            setPendingTheses(theses);
         } catch (err) {
             console.error('Error fetching pending theses:', err);
             setError('Failed to fetch pending theses. Please try again later.');
@@ -33,30 +41,34 @@ const AdminDashboardPage = () => {
         }
     };
 
+    // Use a useEffect hook to fetch data when the component mounts or
+    // when the user or token changes.
     useEffect(() => {
-        // We only want to fetch if the user exists and has the correct role.
-        // We also need to check for the token's existence to avoid a race condition.
+        // Check for user and token to avoid fetching with invalid credentials
         if (user && token && (user.role === 'admin' || user.role === 'supervisor')) {
             fetchPendingTheses();
         } else if (user) {
-            // Redirect non-admin/supervisor users
+            // If a user is logged in but lacks the required role, redirect them
             navigate('/dashboard');
         } else {
-            // Handle cases where there's no user at all
+            // If no user is logged in, finish loading state and let
+            // the main routing handle the unauthenticated user.
             setLoading(false);
         }
-    }, [user, token, navigate]); // FIX: Add 'token' to the dependency array
+    }, [user, token, navigate]); // Dependencies ensure this effect runs when user or token changes
 
+    // Function to handle the approval or rejection of a thesis using the new API function
     const handleAction = async (thesisId, action) => {
         setIsSubmitting(true);
         try {
-            // FIX: Use the imported 'token' variable
-            await axios.put(`http://localhost:5000/api/theses/${thesisId}/${action}`, {}, {
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                },
-            });
-            fetchPendingTheses();
+            // Call the new API function with the thesis ID, action, and token
+            const result = await updateThesisStatus(thesisId, action, token);
+            if (result.success) {
+                // After a successful action, refetch the pending theses to update the list
+                fetchPendingTheses();
+            } else {
+                setError(result.error);
+            }
         } catch (err) {
             console.error(`Error performing ${action} action:`, err);
             setError(`Failed to ${action} thesis. Please try again.`);
@@ -65,14 +77,17 @@ const AdminDashboardPage = () => {
         }
     };
 
+    // Render loading state while data is being fetched
     if (loading) {
         return (
             <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '80vh' }}>
+                <FontAwesomeIcon icon={faSpinner} spin size="2x" className="text-secondary me-2" />
                 <p className="text-secondary fs-5">Loading pending theses...</p>
             </div>
         );
     }
 
+    // Render an error message if an error occurred during fetching
     if (error) {
         return (
             <div className="container mt-5">
@@ -81,11 +96,13 @@ const AdminDashboardPage = () => {
         );
     }
 
-    // This check is the final client-side protection
+    // Final client-side check to ensure only authorized users see the content.
+    // The backend also performs this check, but this provides a better UX.
     if (!user || (user.role !== 'admin' && user.role !== 'supervisor')) {
         return <div className="container mt-5"><div className="alert alert-warning text-center">You do not have permission to view this page.</div></div>;
     }
 
+    // Render the main dashboard content
     return (
         <div className="container mt-5">
             <div className="card shadow-sm p-4">

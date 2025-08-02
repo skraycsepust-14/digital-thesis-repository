@@ -6,6 +6,7 @@ const jwt = require('jsonwebtoken');
 const config = require('config');
 const { check, validationResult } = require('express-validator');
 const auth = require('../../middleware/auth'); // Your authentication middleware
+const role = require('../../middleware/role'); // Import the role middleware
 const User = require('../../models/User');
 
 // Assuming you have an authorization middleware that checks for roles.
@@ -24,6 +25,37 @@ const authorize = (roles = []) => {
 };
 
 
+// @route   GET api/users
+// @desc    Get all users
+// @access  Private (Admin & Supervisor Only)
+router.get('/', auth, role(['admin', 'supervisor']), async (req, res) => {
+    try {
+        const users = await User.find().select('-password');
+        res.json(users);
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Server Error');
+    }
+});
+
+
+// @route   GET api/users/profile
+// @desc    Get the authenticated user's profile
+// @access  Private
+router.get('/profile', auth, async (req, res) => {
+    try {
+        const user = await User.findById(req.user.id).select('-password');
+        if (!user) {
+            return res.status(404).json({ msg: 'User not found' });
+        }
+        res.json(user);
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Server Error');
+    }
+});
+
+
 // @route   POST api/users
 // @desc    Register a new user
 // @access  Public
@@ -40,10 +72,12 @@ router.post(
             return res.status(400).json({ errors: errors.array() });
         }
 
-        const { username, email, password, role } = req.body;
+        const { username, email, password } = req.body;
 
         try {
+            // Check if user exists
             let user = await User.findOne({ email });
+
             if (user) {
                 return res.status(400).json({ errors: [{ msg: 'User already exists' }] });
             }
@@ -52,65 +86,39 @@ router.post(
                 username,
                 email,
                 password,
-                role, // Ensure role is being passed in if needed for registration
+                role: 'user', 
             });
 
+            // Encrypt password
             const salt = await bcrypt.genSalt(10);
-            user.password = await bcrypt.hash(user.password, salt);
+            user.password = await bcrypt.hash(password, salt);
 
             await user.save();
 
+            // Create and return a JWT
             const payload = {
                 user: {
                     id: user.id,
+                    role: user.role,
                 },
             };
 
             jwt.sign(
                 payload,
                 config.get('jwtSecret'),
-                { expiresIn: 360000 },
+                { expiresIn: '1h' },
                 (err, token) => {
                     if (err) throw err;
-                    res.json({ token });
+                    res.status(201).json({ token });
                 }
             );
+
         } catch (err) {
             console.error(err.message);
-            res.status(500).send('Server Error');
+            res.status(500).send('Server error');
         }
     }
 );
-
-// @route   GET api/users
-// @desc    Get all users (for admin panel)
-// @access  Private/Admin
-router.get('/', auth, authorize(['admin']), async (req, res) => {
-    try {
-        const users = await User.find().select('-password'); // Exclude passwords
-        res.json(users);
-    } catch (err) {
-        console.error(err.message);
-        res.status(500).send('Server Error');
-    }
-});
-
-
-// @route   GET api/users/profile
-// @desc    Get a user's profile
-// @access  Private
-router.get('/profile', auth, async (req, res) => {
-    try {
-        const user = await User.findById(req.user.id).select('-password');
-        if (!user) {
-            return res.status(404).json({ msg: 'User not found' });
-        }
-        res.json(user);
-    } catch (err) {
-        console.error(err.message);
-        res.status(500).send('Server Error');
-    }
-});
 
 // @route   PUT api/users/profile
 // @desc    Update a user's profile
