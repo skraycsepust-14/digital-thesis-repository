@@ -6,7 +6,9 @@ const config = require('config');
 const { check, validationResult } = require('express-validator');
 const User = require('../../models/User');
 
-// FIX: Import the middleware function directly, not via destructuring
+// Import the Firebase Admin SDK
+const admin = require('../../firebaseAdmin');
+
 const auth = require('../../middleware/auth');
 
 // @route   GET api/auth
@@ -14,8 +16,6 @@ const auth = require('../../middleware/auth');
 // @access  Private
 router.get('/', auth, async (req, res) => {
     try {
-        // req.user.id comes from the auth middleware
-        // .select('-password') excludes the password from the user object
         const user = await User.findById(req.user.id).select('-password');
         res.json(user);
     } catch (err) {
@@ -24,6 +24,9 @@ router.get('/', auth, async (req, res) => {
     }
 });
 
+// @route   POST api/auth
+// @desc    Authenticate user & get token (standard email/password login)
+// @access  Public
 router.post(
     '/',
     [
@@ -39,7 +42,6 @@ router.post(
         const { email, password } = req.body;
 
         try {
-            // Check if user exists (by email)
             let user = await User.findOne({ email });
             if (!user) {
                 return res
@@ -47,7 +49,6 @@ router.post(
                     .json({ errors: [{ msg: 'Invalid Credentials' }] });
             }
 
-            // Compare provided password with hashed password in DB
             const isMatch = await bcrypt.compare(password, user.password);
             if (!isMatch) {
                 return res
@@ -55,18 +56,17 @@ router.post(
                     .json({ errors: [{ msg: 'Invalid Credentials' }] });
             }
 
-            // Create and return a JWT
             const payload = {
                 user: {
                     id: user.id,
-                    role: user.role, // Include role in the payload for easy access
+                    role: user.role,
                 },
             };
 
             jwt.sign(
                 payload,
                 config.get('jwtSecret'),
-                { expiresIn: '1h' }, // Token expires in 1 hour
+                { expiresIn: '1h' },
                 (err, token) => {
                     if (err) throw err;
                     res.json({ token });
@@ -79,5 +79,59 @@ router.post(
         }
     }
 );
+
+// @route   POST api/auth/google
+// @desc    Authenticate user with Firebase Google ID token & get custom JWT
+// @access  Public
+router.post('/google', async (req, res) => {
+    const { idToken } = req.body;
+
+    try {
+        // Verify the Firebase ID token
+        const decodedToken = await admin.auth().verifyIdToken(idToken);
+        const { uid, email, name } = decodedToken;
+
+        // Check if the user already exists in your database
+        let user = await User.findOne({ email });
+
+        if (!user) {
+            // If the user doesn't exist, create a new user entry
+            // You can generate a random password or use a placeholder
+            const salt = await bcrypt.genSalt(10);
+            const password = await bcrypt.hash('firebase-login', salt); // Placeholder password
+
+            user = new User({
+                username: name || email.split('@')[0],
+                email,
+                password,
+                role: 'user', // Default role for new users
+            });
+
+            await user.save();
+        }
+
+        // Create and return your own custom JWT for the user
+        const payload = {
+            user: {
+                id: user.id,
+                role: user.role,
+            },
+        };
+
+        jwt.sign(
+            payload,
+            config.get('jwtSecret'),
+            { expiresIn: '1h' },
+            (err, token) => {
+                if (err) throw err;
+                res.json({ token });
+            }
+        );
+
+    } catch (err) {
+        console.error('Firebase authentication error:', err.message);
+        res.status(401).json({ msg: 'Firebase token is not valid' });
+    }
+});
 
 module.exports = router;

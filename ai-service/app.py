@@ -39,7 +39,7 @@ def home():
     return "AI Service is running!" # You can customize this message
 
 # --- New MongoDB Setup ---
-MONGO_URI = os.environ.get("MONGO_URI", "mongodb+srv://shuvokumerraycse10:ZHQCNdl28SLEzjqe@cluster0.0doar1z.mongodb.net/digi-thesis_DB?retryWrites=true&w=majority&appName=Cluster0")
+MONGO_URI = os.environ.get("MONGO_URI", "mongodb+srv://shuvokumerraycse10:180114Shuvo@cluster0.0doar1z.mongodb.net/digi-thesis_DB?retryWrites=true&w=majority&appName=Cluster0")
 DB_NAME = os.environ.get("DB_NAME", "digi-thesis_DB")
 COLLECTION_NAME = os.environ.get("COLLECTION_NAME", "theses")
 client = None

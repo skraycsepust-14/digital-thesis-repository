@@ -2,6 +2,12 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import axios from 'axios';
 import Cookies from 'js-cookie';
+import { auth } from '../firebaseConfig'; // Import Firebase auth
+import {
+    GoogleAuthProvider,
+    signInWithPopup,
+    sendPasswordResetEmail,
+} from 'firebase/auth';
 
 // Create the Auth Context
 export const AuthContext = createContext();
@@ -16,7 +22,6 @@ export const AuthProvider = ({ children }) => {
     // Helper function to set the Authorization header for all Axios requests
     const setAuthHeader = (authToken) => {
         if (authToken) {
-            // FIX: Corrected header name to 'Authorization' with 'Bearer' prefix
             axios.defaults.headers.common['Authorization'] = `Bearer ${authToken}`;
         } else {
             delete axios.defaults.headers.common['Authorization'];
@@ -29,6 +34,7 @@ export const AuthProvider = ({ children }) => {
         if (currentToken) {
             setAuthHeader(currentToken);
             try {
+                // This endpoint needs to be able to handle BOTH JWT and Firebase tokens
                 const res = await axios.get('http://localhost:5000/api/auth');
                 setUser(res.data);
                 setIsAuthenticated(true);
@@ -55,7 +61,7 @@ export const AuthProvider = ({ children }) => {
         loadUser();
     }, []);
 
-    // Function to handle user login
+    // Function to handle user login with email/password
     const login = async (email, password) => {
         setLoading(true);
         try {
@@ -64,8 +70,6 @@ export const AuthProvider = ({ children }) => {
 
             Cookies.set('token', newToken, { expires: 7 });
             setToken(newToken);
-
-            // Note: setAuthHeader will be called implicitly via the loadUser call below
             const loadedUser = await loadUser(newToken);
             setIsAuthenticated(true);
 
@@ -83,6 +87,39 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
+    // New function to handle Google Sign-In
+    const loginWithGoogle = async () => {
+        setLoading(true);
+        const provider = new GoogleAuthProvider();
+        try {
+            const result = await signInWithPopup(auth, provider);
+            // Get the Firebase ID token
+            const idToken = await result.user.getIdToken();
+
+            // Send this ID token to your backend for verification
+            const res = await axios.post('http://localhost:5000/api/auth/google', { idToken });
+            const newToken = res.data.token; // Your backend should return your custom JWT
+            
+            Cookies.set('token', newToken, { expires: 7 });
+            setToken(newToken);
+            const loadedUser = await loadUser(newToken);
+            setIsAuthenticated(true);
+            
+            return { success: true, user: loadedUser };
+        } catch (err) {
+            console.error('AuthContext login with Google: Login error:', err.response?.data?.msg || err.message);
+            setToken(null);
+            setUser(null);
+            setIsAuthenticated(false);
+            Cookies.remove('token');
+            setAuthHeader(null);
+            return { success: false, error: err.message || 'Google login failed', user: null };
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Function to handle user registration
     const register = async (username, email, password) => {
         setLoading(true);
         try {
@@ -91,8 +128,6 @@ export const AuthProvider = ({ children }) => {
 
             Cookies.set('token', newToken, { expires: 7 });
             setToken(newToken);
-
-            // Note: setAuthHeader will be called implicitly via the loadUser call below
             const loadedUser = await loadUser(newToken);
             setIsAuthenticated(true);
 
@@ -107,6 +142,17 @@ export const AuthProvider = ({ children }) => {
             return { success: false, error: err.response?.data?.errors?.[0]?.msg || 'Registration failed', user: null };
         } finally {
             setLoading(false);
+        }
+    };
+
+    // New function to handle password reset
+    const sendPasswordReset = async (email) => {
+        try {
+            await sendPasswordResetEmail(auth, email);
+            return { success: true, message: 'Password reset email sent. Check your inbox.' };
+        } catch (error) {
+            console.error('Password reset error:', error.message);
+            return { success: false, error: error.message || 'Failed to send password reset email.' };
         }
     };
 
@@ -126,9 +172,11 @@ export const AuthProvider = ({ children }) => {
         token,
         loading,
         login,
+        loginWithGoogle, // Add the new function
         register,
         logout,
         isAuthenticated,
+        sendPasswordReset, // Add the new function
     };
 
     return (
