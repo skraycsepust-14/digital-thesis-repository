@@ -186,6 +186,16 @@ const Navbar = () => {
                                         >
                                             <FontAwesomeIcon icon={faEdit} className="me-2" />Edit Profile
                                         </NavLink>
+                                        <NavLink
+                                            to="/dashboard"
+                                            className="dropdown-item"
+                                            onClick={() => {
+                                                setIsProfileDropdownOpen(false);
+                                                setIsMobileMenuOpen(false);
+                                            }}
+                                        >
+                                            <FontAwesomeIcon icon={faEdit} className="me-2" />Dashboard
+                                        </NavLink>
                                         <div className="dropdown-divider"></div>
                                         <button
                                             className="dropdown-item"
