@@ -40,14 +40,25 @@ const UploadThesisPage = () => {
 
     useEffect(() => {
         const fetchSupervisors = async () => {
-            if (!token) return;
+            if (!token) {
+                setIsLoadingSupervisors(false);
+                return;
+            }
+
             try {
                 const res = await axios.get('http://localhost:5000/api/users/supervisors', {
                     headers: { Authorization: `Bearer ${token}` }
                 });
-                setSupervisors(res.data);
-                if (res.data.length > 0) {
+
+                // Check if the response data is a non-empty array before updating state
+                if (Array.isArray(res.data) && res.data.length > 0) {
+                    setSupervisors(res.data);
+                    // Set the first supervisor as the default selected value
                     setSupervisor(res.data[0]._id);
+                } else {
+                    // If no supervisors are returned, set an error message
+                    setSupervisors([]);
+                    setError('No supervisors found. Please contact an administrator.');
                 }
             } catch (err) {
                 console.error('Error fetching supervisors:', err);
@@ -181,7 +192,7 @@ const UploadThesisPage = () => {
                                             value={supervisor}
                                             onChange={(e) => setSupervisor(e.target.value)}
                                             required
-                                            disabled={isLoadingSupervisors}
+                                            disabled={isLoadingSupervisors || supervisors.length === 0}
                                         >
                                             <option value="" disabled>Select a Supervisor</option>
                                             {supervisors.map((sup) => (
@@ -256,7 +267,7 @@ const UploadThesisPage = () => {
                             </div>
 
                             <div className="d-grid gap-2">
-                                <button type="submit" className="btn btn-primary btn-lg" disabled={isSubmitting || isLoadingSupervisors}>
+                                <button type="submit" className="btn btn-primary btn-lg" disabled={isSubmitting || isLoadingSupervisors || supervisors.length === 0}>
                                     {isSubmitting ? (
                                         <>
                                             <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
