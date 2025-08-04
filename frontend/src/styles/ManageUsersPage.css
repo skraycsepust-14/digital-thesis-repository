@@ -1,0 +1,109 @@
+/* styles/ManageUsersPage.css */
+
+.manage-users {
+    padding: 2rem 1rem;
+    color: #222;
+}
+
+.manage-users h2 {
+    font-size: 2rem;
+    color: #4b0082;
+    font-weight: 600;
+    margin-bottom: 1.5rem;
+}
+
+.manage-users .form-select,
+.manage-users .btn {
+    min-width: 160px;
+}
+
+.manage-users .table {
+    border-radius: 10px;
+    overflow: hidden;
+    background-color: #fff;
+}
+
+.manage-users .table thead {
+    background-color: #6c63ff;
+    color: white;
+    text-transform: uppercase;
+    font-weight: bold;
+}
+
+.manage-users .table tbody tr:hover {
+    background-color: #f3f3ff;
+    transition: background 0.2s;
+}
+
+.manage-users .table td,
+.manage-users .table th {
+    vertical-align: middle;
+    text-align: center;
+}
+
+.manage-users .btn-danger {
+    background-color: #dc3545;
+    border-color: #dc3545;
+    color: #fff;
+}
+
+.manage-users .btn-danger:hover {
+    background-color: #c82333;
+    border-color: #bd2130;
+}
+
+.manage-users .btn-outline-primary {
+    border-color: #4b0082;
+    color: #4b0082;
+}
+
+.manage-users .btn-outline-primary:hover {
+    background-color: #4b0082;
+    color: #fff;
+}
+
+.manage-users .card {
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    background-color: #f9f9f9;
+}
+
+.manage-users .card-header {
+    background: linear-gradient(45deg, #6a11cb, #2575fc);
+    font-weight: bold;
+}
+
+.manage-users .list-group-item {
+    font-size: 0.9rem;
+    color: #333;
+    border: none;
+}
+
+/* Dark Theme Support */
+body.dark-theme .manage-users {
+    background-color: #181818;
+    color: #eee;
+}
+
+body.dark-theme .manage-users .table,
+body.dark-theme .manage-users .card {
+    background-color: #222;
+}
+
+body.dark-theme .manage-users .table thead {
+    background-color: #444;
+}
+
+body.dark-theme .manage-users .btn-outline-primary {
+    border-color: #bbb;
+    color: #bbb;
+}
+
+body.dark-theme .manage-users .btn-outline-primary:hover {
+    background-color: #bbb;
+    color: #111;
+}
+
+body.dark-theme .manage-users .card-header {
+    background: linear-gradient(45deg, #333, #555);
+}

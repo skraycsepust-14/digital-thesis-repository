@@ -11,6 +11,7 @@ import { Link } from 'react-router-dom';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import { CSVLink } from 'react-csv';
+import { toast } from 'react-toastify';
 
 const COLORS = ['#4e79a7', '#f28e2b', '#e15759', '#76b7b2', '#59a14f', '#edc948'];
 const PAGE_SIZE = 4;
@@ -218,6 +219,7 @@ const AdminDashboardPage = () => {
                                                         });
                                                         setPendingTheses(prev => prev.filter(t => t._id !== thesis._id));
                                                         showNotification('Thesis approved successfully');
+                                                        toast.success('Thesis approved successfully');
                                                     }}
                                                 >
                                                     Approve
@@ -230,6 +232,7 @@ const AdminDashboardPage = () => {
                                                         });
                                                         setPendingTheses(prev => prev.filter(t => t._id !== thesis._id));
                                                         showNotification('Thesis rejected');
+                                                        toast.success('Thesis rejected');
                                                     }}
                                                 >
                                                     Reject

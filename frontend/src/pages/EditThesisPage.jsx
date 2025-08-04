@@ -4,6 +4,7 @@ import axios from 'axios';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import '../styles/EditThesisPage.css';
+import { toast } from 'react-toastify';
 
 const EditThesisPage = () => {
     const { id } = useParams();
@@ -35,7 +36,8 @@ const EditThesisPage = () => {
                 const { title, authorName, department, submissionYear, abstract, keywords, supervisor, status, fileName } = response.data;
 
                 if (status !== 'pending') {
-                    setError('Only pending theses can be edited.');
+                    //setError('Only pending theses can be edited.');
+                    toast.error('Only pending theses can be edited.');
                 } else {
                     setFormData({
                         title,
@@ -87,11 +89,11 @@ const EditThesisPage = () => {
                 }
             });
 
-            alert('Thesis updated successfully.');
+            toast.success('Thesis updated successfully.');
             navigate('/dashboard');
         } catch (err) {
             console.error('Update failed:', err);
-            alert('Failed to update thesis.');
+            toast.error('Failed to update thesis.');
         }
     };
 

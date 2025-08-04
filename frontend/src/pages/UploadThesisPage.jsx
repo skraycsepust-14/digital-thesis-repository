@@ -19,6 +19,7 @@ import {
     faChalkboardTeacher
 } from '@fortawesome/free-solid-svg-icons';
 import '../styles/UploadThesisPage.css';
+import { toast } from 'react-toastify';
 
 const UploadThesisPage = () => {
     const { user, token } = useAuth();
@@ -59,10 +60,12 @@ const UploadThesisPage = () => {
                     // If no supervisors are returned, set an error message
                     setSupervisors([]);
                     setError('No supervisors found. Please contact an administrator.');
+                    toast.success('No supervisors found. Please contact an administrator.');
                 }
             } catch (err) {
                 console.error('Error fetching supervisors:', err);
                 setError('Failed to load supervisors. Please try again.');
+                toast.error('Failed to load supervisors. Please try again.');
             } finally {
                 setIsLoadingSupervisors(false);
             }
@@ -96,6 +99,7 @@ const UploadThesisPage = () => {
             });
 
             setSuccess('Thesis submitted successfully! Redirecting you to the dashboard...');
+            toast.success('Thesis submitted successfully! Redirecting you to the dashboard...');
 
             setTimeout(() => {
                 navigate('/dashboard');
@@ -105,6 +109,7 @@ const UploadThesisPage = () => {
             console.error('Submission error:', err.response || err);
             const errMsg = err.response?.data?.msg || err.response?.data?.errors?.[0]?.msg || 'Failed to submit thesis.';
             setError(errMsg);
+            toast.error(errMsg);
         } finally {
             setIsSubmitting(false);
         }
