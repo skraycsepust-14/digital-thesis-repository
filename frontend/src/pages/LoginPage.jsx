@@ -5,6 +5,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faEnvelope, faLock, faEye, faEyeSlash, faSpinner, faKey } from '@fortawesome/free-solid-svg-icons';
 import { faGoogle } from '@fortawesome/free-brands-svg-icons';
 import Snackbar from '../components/Snackbar'; // Import the new Snackbar component
+import { toast } from 'react-toastify';
 
 const LoginPage = () => {
     const [email, setEmail] = useState('');
@@ -48,6 +49,7 @@ const LoginPage = () => {
                 }
             } else {
                 showSnackbar(result.error || 'Login failed. Please check your credentials.', 'error');
+                toast.error(result.error || 'Login failed. Please check your credentials.');
             }
         } catch (err) {
             showSnackbar('An unexpected error occurred. Please try again.', 'error');

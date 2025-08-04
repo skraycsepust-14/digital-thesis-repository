@@ -22,9 +22,9 @@ import SearchResultPage from './pages/SearchResultPage';
 import AIAnalysisPage from './pages/AIAnalysisPage';
 import EditThesisPage from './pages/EditThesisPage';
 
-import './App.css';
-import './index.css';
-import './styles/DarkTheme.css';
+//import './App.css';
+import './index.css'; 
+//import './styles/DarkTheme.css';
 
 // ✅ Toastify
 import { ToastContainer } from 'react-toastify';
