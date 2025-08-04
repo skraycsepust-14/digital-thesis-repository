@@ -13,8 +13,10 @@ import {
     faDatabase,
     faSearch,
     faBrain,
-    faChartLine, // NEW: Import for Analytics icon
-    faHistory,   // NEW: Import for Version Control icon
+    faChartLine,
+    faHistory,
+    faSortDown, // NEW: Import for sorting icon
+    faFilter, // NEW: Import for filtering icon
 } from '@fortawesome/free-solid-svg-icons';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -37,12 +39,40 @@ const HomePage = () => {
     const heroPhrases = ['Discover Knowledge', 'Share Your Research', 'Connect with Academia'];
 
     const [currentPage, setCurrentPage] = useState(1);
+    const [filterOptions, setFilterOptions] = useState({ departments: [], supervisors: [] });
+    const [selectedFilters, setSelectedFilters] = useState({
+        department: '',
+        supervisor: '',
+        submissionYear: '',
+    });
+    const [sortOption, setSortOption] = useState('newest'); // 'newest', 'oldest', 'title_asc', 'title_desc'
+
+    // Fetch filter options (departments, supervisors)
+    useEffect(() => {
+        const fetchFilterOptions = async () => {
+            try {
+                const [departmentsRes, supervisorsRes] = await Promise.all([
+                    axios.get('http://localhost:5000/api/theses/departments'),
+                    axios.get('http://localhost:5000/api/theses/supervisors'),
+                ]);
+                setFilterOptions({
+                    departments: departmentsRes.data,
+                    supervisors: supervisorsRes.data,
+                });
+            } catch (err) {
+                console.error('Error fetching filter options:', err);
+            }
+        };
+        fetchFilterOptions();
+    }, []);
 
     useEffect(() => {
         if (!searchQuery) {
             const fetchTheses = async () => {
+                setLoading(true);
                 try {
-                    const response = await axios.get('http://localhost:5000/api/theses');
+                    const params = { ...selectedFilters, sort: sortOption };
+                    const response = await axios.get('http://localhost:5000/api/theses', { params });
                     setTheses(response.data);
                     setLoading(false);
                     setCurrentPage(1);
@@ -68,7 +98,7 @@ const HomePage = () => {
         }, 3000);
 
         return () => clearInterval(intervalId);
-    }, [searchQuery]);
+    }, [searchQuery, selectedFilters, sortOption]);
 
     const indexOfLastThesis = currentPage * THESES_PER_PAGE_HOME;
     const indexOfFirstThesis = indexOfLastThesis - THESES_PER_PAGE_HOME;
@@ -85,6 +115,27 @@ const HomePage = () => {
 
     const handleFeatureClick = () => {
         navigate('/ai-analysis'); // Redirect to the AI Analysis page (all features go here for now)
+    };
+
+    const handleFilterChange = (e) => {
+        const { name, value } = e.target;
+        setSelectedFilters(prevFilters => ({
+            ...prevFilters,
+            [name]: value,
+        }));
+    };
+
+    const handleSortChange = (e) => {
+        setSortOption(e.target.value);
+    };
+
+    const getYears = () => {
+        const currentYear = new Date().getFullYear();
+        const years = [];
+        for (let i = currentYear; i >= 2000; i--) {
+            years.push(i);
+        }
+        return years;
     };
 
     if (loading && !searchQuery) {
@@ -127,6 +178,70 @@ const HomePage = () => {
                 ) : (
                     <>
                         <h2 className="text-center mb-4 text-primary">Recent Submissions</h2>
+                        <div className="filters-sort-container mb-4 p-3 border rounded">
+                            <div className="row g-3 align-items-center">
+                                <div className="col-md-auto fw-bold text-secondary">
+                                    <FontAwesomeIcon icon={faFilter} className="me-2" />
+                                    Filter by:
+                                </div>
+                                <div className="col-md-3">
+                                    <select
+                                        className="form-select"
+                                        name="department"
+                                        value={selectedFilters.department}
+                                        onChange={handleFilterChange}
+                                    >
+                                        <option value="">All Departments</option>
+                                        {filterOptions.departments.map(dept => (
+                                            <option key={dept} value={dept}>{dept}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <div className="col-md-3">
+                                    <select
+                                        className="form-select"
+                                        name="supervisor"
+                                        value={selectedFilters.supervisor}
+                                        onChange={handleFilterChange}
+                                    >
+                                        <option value="">All Supervisors</option>
+                                        {filterOptions.supervisors.map(sup => (
+                                            <option key={sup} value={sup}>{sup}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <div className="col-md-2">
+                                    <select
+                                        className="form-select"
+                                        name="submissionYear"
+                                        value={selectedFilters.submissionYear}
+                                        onChange={handleFilterChange}
+                                    >
+                                        <option value="">All Years</option>
+                                        {getYears().map(year => (
+                                            <option key={year} value={year}>{year}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <div className="col-md-auto ms-md-auto fw-bold text-secondary">
+                                    <FontAwesomeIcon icon={faSortDown} className="me-2" />
+                                    Sort by:
+                                </div>
+                                <div className="col-md-2">
+                                    <select
+                                        className="form-select"
+                                        value={sortOption}
+                                        onChange={handleSortChange}
+                                    >
+                                        <option value="newest">Newest First</option>
+                                        <option value="oldest">Oldest First</option>
+                                        <option value="title_asc">Title (A-Z)</option>
+                                        <option value="title_desc">Title (Z-A)</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
                         <div className="list-group thesis-list-vertical">
                             {currentThesesToDisplay.length > 0 ? (
                                 currentThesesToDisplay.map((thesis) => (
@@ -152,7 +267,7 @@ const HomePage = () => {
                                 ))
                             ) : (
                                 <div className="text-center text-muted p-5 w-100">
-                                    <p>No theses have been uploaded yet.</p>
+                                    <p>No theses found with the selected filters.</p>
                                 </div>
                             )}
                         </div>

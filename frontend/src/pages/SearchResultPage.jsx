@@ -1,39 +1,80 @@
 // frontend/src/pages/SearchResultPage.jsx
-import React, { useState, useEffect } from 'react'; // NEW: Import useState, useEffect
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 import { useSearch } from '../context/SearchContext.jsx';
-import { useNavigate } from 'react-router-dom';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'; // NEW: Import FontAwesomeIcon
-import { faChevronLeft, faChevronRight } from '@fortawesome/free-solid-svg-icons'; // NEW: Import chevron icons
-import '../styles/SearchResultPage.css'; // Import your styles for this page
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import {
+    faSpinner,
+    faChevronLeft,
+    faChevronRight,
+    faUser,
+    faBuilding,
+    faCalendar,
+    faSortDown,
+    faFilter,
+} from '@fortawesome/free-solid-svg-icons';
+import { Link } from 'react-router-dom';
+import '../styles/SearchResultPage.css';
 
-const RESULTS_PER_PAGE = 2; // Define how many search results to show per page
+const THESES_PER_PAGE_SEARCH = 5;
 
 const SearchResultPage = () => {
-    // Consume the search state from the SearchContext
-    const { searchQuery, searchResults, isSearching, searchError } = useSearch();
-    const navigate = useNavigate();
+    const { searchQuery, setSearchResults, searchResults } = useSearch();
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(null);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [filterOptions, setFilterOptions] = useState({ departments: [], supervisors: [] });
+    const [selectedFilters, setSelectedFilters] = useState({
+        department: '',
+        supervisor: '',
+        submissionYear: '',
+    });
+    const [sortOption, setSortOption] = useState('relevance');
 
-    const [currentPage, setCurrentPage] = useState(1); // NEW: State for current page
-
-    // NEW: Reset currentPage whenever searchResults or searchQuery changes
-    // This ensures that when a new search is performed or results are updated,
-    // the pagination resets to the first page.
     useEffect(() => {
-        setCurrentPage(1);
-    }, [searchResults, searchQuery]);
+        const fetchFilterOptions = async () => {
+            try {
+                const [departmentsRes, supervisorsRes] = await Promise.all([
+                    axios.get('http://localhost:5000/api/theses/departments'),
+                    axios.get('http://localhost:5000/api/theses/supervisors'),
+                ]);
+                setFilterOptions({
+                    departments: departmentsRes.data,
+                    supervisors: supervisorsRes.data,
+                });
+            } catch (err) {
+                console.error('Error fetching filter options:', err);
+            }
+        };
+        fetchFilterOptions();
+    }, []);
 
-    // Function to handle click on a thesis result
-    const handleThesisClick = (thesisId) => {
-        navigate(`/thesis/${thesisId}`);
-    };
+    useEffect(() => {
+        if (searchQuery) {
+            const performSearch = async () => {
+                setLoading(true);
+                setError(null);
+                try {
+                    const params = { ...selectedFilters, sort: sortOption, q: searchQuery };
+                    const response = await axios.get('http://localhost:5000/api/theses/search', { params });
+                    setSearchResults(response.data);
+                    setLoading(false);
+                    setCurrentPage(1);
+                } catch (err) {
+                    console.error('Search error:', err);
+                    setError('Failed to fetch search results. Please try again.');
+                    setLoading(false);
+                }
+            };
+            performSearch();
+        }
+    }, [searchQuery, selectedFilters, sortOption, setSearchResults]);
 
-    // NEW: Calculate results to display for the current page
-    const indexOfLastResult = currentPage * RESULTS_PER_PAGE;
-    const indexOfFirstResult = indexOfLastResult - RESULTS_PER_PAGE;
-    const currentResultsToDisplay = searchResults.slice(indexOfFirstResult, indexOfLastResult);
-    const totalPages = Math.ceil(searchResults.length / RESULTS_PER_PAGE);
+    const indexOfLastThesis = currentPage * THESES_PER_PAGE_SEARCH;
+    const indexOfFirstThesis = indexOfLastThesis - THESES_PER_PAGE_SEARCH;
+    const currentThesesToDisplay = searchResults.slice(indexOfFirstThesis, indexOfLastThesis);
+    const totalPages = Math.ceil(searchResults.length / THESES_PER_PAGE_SEARCH);
 
-    // NEW: Functions for navigating between pages
     const goToNextPage = () => {
         setCurrentPage(prevPage => Math.min(prevPage + 1, totalPages));
     };
@@ -42,55 +83,146 @@ const SearchResultPage = () => {
         setCurrentPage(prevPage => Math.max(prevPage - 1, 1));
     };
 
-    // Only render this component if a search has been performed
-    if (!searchQuery && searchResults.length === 0 && !isSearching && !searchError) {
-        return null;
+    const handleFilterChange = (e) => {
+        const { name, value } = e.target;
+        setSelectedFilters(prevFilters => ({
+            ...prevFilters,
+            [name]: value,
+        }));
+    };
+
+    const handleSortChange = (e) => {
+        setSortOption(e.target.value);
+    };
+
+    const getYears = () => {
+        const currentYear = new Date().getFullYear();
+        const years = [];
+        for (let i = currentYear; i >= 2000; i--) {
+            years.push(i);
+        }
+        return years;
+    };
+
+    if (loading) {
+        return (
+            <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '80vh' }}>
+                <FontAwesomeIcon icon={faSpinner} spin size="3x" className="text-primary" />
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="container mt-5">
+                <div className="alert alert-danger text-center">{error}</div>
+            </div>
+        );
+    }
+
+    if (!searchQuery) {
+        return (
+            <div className="container mt-5 text-center">
+                <p className="text-muted">Please use the search bar to find theses.</p>
+            </div>
+        );
     }
 
     return (
-        <div className="search-results-page container mt-4">
-            {isSearching && (
-                <div className="alert alert-info text-center" role="alert">
-                    Searching for "{searchQuery}"...
-                </div>
-            )}
+        <div className="container my-5">
+            <h2 className="text-center mb-4 text-primary">Search Results for "{searchQuery}"</h2>
 
-            {searchError && (
-                <div className="alert alert-danger" role="alert">
-                    Error: {searchError}
+            <div className="filters-sort-container mb-4 p-3 border rounded">
+                <div className="row g-3 align-items-center">
+                    <div className="col-md-auto fw-bold text-secondary">
+                        <FontAwesomeIcon icon={faFilter} className="me-2" />
+                        Filter by:
+                    </div>
+                    <div className="col-md-3">
+                        <select
+                            className="form-select"
+                            name="department"
+                            value={selectedFilters.department}
+                            onChange={handleFilterChange}
+                        >
+                            <option value="">All Departments</option>
+                            {filterOptions.departments.map(dept => (
+                                <option key={dept} value={dept}>{dept}</option>
+                            ))}
+                        </select>
+                    </div>
+                    <div className="col-md-3">
+                        <select
+                            className="form-select"
+                            name="supervisor"
+                            value={selectedFilters.supervisor}
+                            onChange={handleFilterChange}
+                        >
+                            <option value="">All Supervisors</option>
+                            {filterOptions.supervisors.map(sup => (
+                                <option key={sup} value={sup}>{sup}</option>
+                            ))}
+                        </select>
+                    </div>
+                    <div className="col-md-2">
+                        <select
+                            className="form-select"
+                            name="submissionYear"
+                            value={selectedFilters.submissionYear}
+                            onChange={handleFilterChange}
+                        >
+                            <option value="">All Years</option>
+                            {getYears().map(year => (
+                                <option key={year} value={year}>{year}</option>
+                            ))}
+                        </select>
+                    </div>
+                    <div className="col-md-auto ms-md-auto fw-bold text-secondary">
+                        <FontAwesomeIcon icon={faSortDown} className="me-2" />
+                        Sort by:
+                    </div>
+                    <div className="col-md-2">
+                        <select
+                            className="form-select"
+                            value={sortOption}
+                            onChange={handleSortChange}
+                        >
+                            <option value="relevance">Relevance</option>
+                            <option value="newest">Newest First</option>
+                            <option value="oldest">Oldest First</option>
+                            <option value="title_asc">Title (A-Z)</option>
+                            <option value="title_desc">Title (Z-A)</option>
+                        </select>
+                    </div>
                 </div>
-            )}
+            </div>
 
-            {!isSearching && !searchError && searchQuery && searchResults.length === 0 && (
-                <div className="alert alert-warning text-center" role="alert">
-                    No results found for "{searchQuery}".
-                </div>
-            )}
-
-            {!isSearching && searchResults.length > 0 && (
+            {searchResults.length > 0 ? (
                 <>
-                    {/* NEW: Display total results count */}
-                    <h2 className="mb-3">Results for "{searchQuery}" ({searchResults.length} found)</h2>
-                    <div className="list-group">
-                        {/* CHANGED: Map over currentResultsToDisplay for pagination */}
-                        {currentResultsToDisplay.map((thesis) => (
-                            <div
-                                key={thesis.id}
-                                className="list-group-item list-group-item-action mb-3 rounded shadow-sm"
-                                onClick={() => handleThesisClick(thesis.id)}
-                                style={{ cursor: 'pointer' }}
+                    <div className="list-group thesis-list-vertical">
+                        {currentThesesToDisplay.map((thesis) => (
+                            <Link
+                                to={`/thesis/${thesis._id}`}
+                                key={thesis._id}
+                                className="list-group-item list-group-item-action public-thesis-line-item"
                             >
-                                <h5 className="mb-1 text-primary">{thesis.title}</h5>
-                                <p className="mb-1 text-muted"><strong>Author:</strong> {thesis.author}</p>
-                                <small className="text-success">
-                                    Relevance Score: {thesis.relevance_score.toFixed(4)} (Lower is more relevant)
-                                </small>
-                            </div>
+                                <span className="thesis-title">{thesis.title}</span>
+                                <span className="thesis-author d-none d-md-inline">
+                                    <FontAwesomeIcon icon={faUser} className="me-1" />
+                                    By: {thesis.authorName}
+                                </span>
+                                <span className="thesis-department d-none d-lg-inline">
+                                    <FontAwesomeIcon icon={faBuilding} className="me-1" />
+                                    Dept: {thesis.department}
+                                </span>
+                                <span className="thesis-year ms-auto">
+                                    <FontAwesomeIcon icon={faCalendar} className="me-1" />
+                                    {thesis.submissionYear}
+                                </span>
+                            </Link>
                         ))}
                     </div>
-
-                    {/* NEW: Pagination Controls */}
-                    {searchResults.length > RESULTS_PER_PAGE && ( // Only show controls if there's more than one page
+                    {searchResults.length > THESES_PER_PAGE_SEARCH && (
                         <div className="d-flex justify-content-between align-items-center mt-4 p-3 border-top">
                             <button
                                 className="btn btn-outline-primary"
@@ -112,6 +244,10 @@ const SearchResultPage = () => {
                         </div>
                     )}
                 </>
+            ) : (
+                <div className="text-center text-muted p-5 w-100">
+                    <p>No results found for your search query with the selected filters.</p>
+                </div>
             )}
         </div>
     );
