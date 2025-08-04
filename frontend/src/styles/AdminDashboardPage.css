@@ -1,0 +1,38 @@
+/* frontend/src/styles/AdminDashboardPage.css */
+
+.admin-dashboard {
+    padding: 2rem;
+    background-color: #f9f9f9;
+    min-height: 100vh;
+}
+
+.admin-dashboard h2 {
+    font-weight: bold;
+}
+
+.analytics-section .card-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 0.75rem;
+}
+
+.thesis-card {
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.05);
+    transition: box-shadow 0.3s ease;
+}
+
+.thesis-card:hover {
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+}
+
+.thesis-title {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: #333;
+}
+
+.action-buttons {
+    gap: 0.5rem;
+    margin-top: 1rem;
+    justify-content: flex-end;
+}

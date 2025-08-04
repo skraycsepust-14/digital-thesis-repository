@@ -1,205 +1,205 @@
 // frontend/src/pages/AdminDashboardPage.jsx
-
-// This component is the admin dashboard where administrators and supervisors can
-// approve or reject pending theses and view analytics.
-
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
+import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import '../styles/AdminDashboardPage.css';
 import {
-    faFileAlt,
-    faClock,
-    faCheckCircle,
-    faTimesCircle,
-    faSpinner,
-    faChartBar, // New icon for the analytics dashboard
-} from '@fortawesome/free-solid-svg-icons';
-import { useNavigate } from 'react-router-dom';
-import { getPendingTheses, updateThesisStatus } from '../api/thesisApi';
+    PieChart, Pie, Cell, Tooltip, Legend,
+    BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer
+} from 'recharts';
+import { Link } from 'react-router-dom';
+import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
 
-// Placeholder for a chart component. You can replace this with a real chart library
-// like Chart.js, Recharts, or Nivo.
-const Chart = ({ title, data }) => (
-    <div className="card shadow-sm h-100">
-        <div className="card-body">
-            <h5 className="card-title text-center text-primary">{title}</h5>
-            <div className="chart-placeholder text-center text-muted p-5">
-                <p>Chart for "{title}"</p>
-                <pre>{JSON.stringify(data, null, 2)}</pre>
-            </div>
-        </div>
-    </div>
-);
+const COLORS = ['#8884d8', '#82ca9d', '#ffc658', '#ff7f7f', '#a9a9ff'];
+const PAGE_SIZE = 4;
 
 const AdminDashboardPage = () => {
+    const { token } = useAuth();
+    const [byDepartment, setByDepartment] = useState([]);
+    const [byStatus, setByStatus] = useState([]);
     const [pendingTheses, setPendingTheses] = useState([]);
-    const [analyticsData, setAnalyticsData] = useState(null);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
-    const [isSubmitting, setIsSubmitting] = useState(false);
-
-    const { user, token } = useAuth();
-    const navigate = useNavigate();
-
-    const fetchPendingTheses = async () => {
-        try {
-            const theses = await getPendingTheses(token);
-            setPendingTheses(theses);
-        } catch (err) {
-            console.error('Error fetching pending theses:', err);
-            setError('Failed to fetch pending theses. Please try again later.');
-        }
-    };
-
-    const fetchAnalyticsData = async () => {
-        try {
-            // Updated API calls to fetch analytics data with authentication headers
-            const config = {
-                headers: {
-                    'x-auth-token': token,
-                },
-            };
-            const [thesesByDeptRes, thesesByStatusRes] = await Promise.all([
-                axios.get('http://localhost:5000/api/theses/analytics/by-department', config),
-                axios.get('http://localhost:5000/api/theses/analytics/by-status', config),
-            ]);
-
-            setAnalyticsData({
-                thesesByDepartment: thesesByDeptRes.data,
-                thesesByStatus: thesesByStatusRes.data,
-            });
-        } catch (err) {
-            console.error('Error fetching analytics data:', err);
-            // setError('Failed to fetch analytics data.');
-        }
-    };
+    const [error, setError] = useState('');
+    const [filter, setFilter] = useState('');
+    const [currentPage, setCurrentPage] = useState(1);
+    const [showAnalytics, setShowAnalytics] = useState(true);
+    const chartRef = useRef(null);
 
     useEffect(() => {
-        if (user && token && (user.role === 'admin' || user.role === 'supervisor')) {
-            // Fetch both pending theses and analytics data
-            Promise.all([fetchPendingTheses(), fetchAnalyticsData()])
-                .finally(() => setLoading(false));
-        } else if (user) {
-            navigate('/dashboard');
-        } else {
-            setLoading(false);
-        }
-    }, [user, token, navigate]);
-
-    const handleAction = async (thesisId, action) => {
-        setIsSubmitting(true);
-        try {
-            const result = await updateThesisStatus(thesisId, action, token);
-            if (result.success) {
-                // Refetch both lists to update the dashboard
-                await Promise.all([fetchPendingTheses(), fetchAnalyticsData()]);
-            } else {
-                setError(result.error);
+        const fetchData = async () => {
+            try {
+                const config = { headers: { 'x-auth-token': token } };
+                const [deptRes, statusRes, pendingRes] = await Promise.all([
+                    axios.get('http://localhost:5000/api/theses/analytics/by-department', config),
+                    axios.get('http://localhost:5000/api/theses/analytics/by-status', config),
+                    axios.get('http://localhost:5000/api/theses/pending', config),
+                ]);
+                setByDepartment(deptRes.data);
+                setByStatus(statusRes.data);
+                setPendingTheses(pendingRes.data);
+            } catch (err) {
+                console.error('Dashboard data fetch error:', err);
+                setError('Failed to fetch dashboard data.');
+            } finally {
+                setLoading(false);
             }
-        } catch (err) {
-            console.error(`Error performing ${action} action:`, err);
-            setError(`Failed to ${action} thesis. Please try again.`);
-        } finally {
-            setIsSubmitting(false);
-        }
+        };
+
+        if (token) fetchData();
+    }, [token]);
+
+    const filteredTheses = pendingTheses.filter((thesis) =>
+        thesis.title.toLowerCase().includes(filter.toLowerCase())
+    );
+
+    const totalPages = Math.ceil(filteredTheses.length / PAGE_SIZE);
+    const paginatedTheses = filteredTheses.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+
+    const handleExportPDF = () => {
+        if (!chartRef.current) return;
+        html2canvas(chartRef.current).then((canvas) => {
+            const imgData = canvas.toDataURL('image/png');
+            const pdf = new jsPDF();
+            pdf.addImage(imgData, 'PNG', 10, 10);
+            pdf.save('thesis-analytics.pdf');
+        });
     };
 
-    if (loading) {
-        return (
-            <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '80vh' }}>
-                <FontAwesomeIcon icon={faSpinner} spin size="2x" className="text-secondary me-2" />
-                <p className="text-secondary fs-5">Loading dashboard data...</p>
-            </div>
-        );
-    }
-
-    if (error) {
-        return (
-            <div className="container mt-5">
-                <div className="alert alert-danger text-center">{error}</div>
-            </div>
-        );
-    }
-
-    if (!user || (user.role !== 'admin' && user.role !== 'supervisor')) {
-        return <div className="container mt-5"><div className="alert alert-warning text-center">You do not have permission to view this page.</div></div>;
-    }
+    if (loading) return <div className="admin-dashboard text-center">Loading dashboard...</div>;
+    if (error) return <div className="admin-dashboard alert alert-danger text-center">{error}</div>;
 
     return (
-        <div className="container mt-5">
-            <h2 className="text-center mb-4">
-                <FontAwesomeIcon icon={faChartBar} className="me-2 text-primary" />
-                Administrative Dashboard
-            </h2>
+        <div className="container admin-dashboard">
+            <h2 className="mb-4 text-center">Admin Dashboard</h2>
 
-            {/* Analytics Dashboard Section */}
-            <section className="analytics-section mb-5">
-                <h3 className="text-center text-secondary mb-4">Repository Analytics</h3>
-                <div className="row g-4">
-                    <div className="col-lg-6">
-                        <Chart title="Theses by Department" data={analyticsData?.thesesByDepartment} />
+            <div className="d-flex justify-content-between align-items-center mb-3">
+                <input
+                    type="text"
+                    className="form-control w-50"
+                    placeholder="Search pending theses by title..."
+                    value={filter}
+                    onChange={(e) => setFilter(e.target.value)}
+                />
+                <div>
+                    <Link to="/upload-thesis" className="btn btn-primary me-2">Upload New Thesis</Link>
+                    <button className="btn btn-secondary" onClick={() => setShowAnalytics(!showAnalytics)}>
+                        {showAnalytics ? 'Hide Analytics' : 'Show Analytics'}
+                    </button>
+                </div>
+            </div>
+
+            {showAnalytics && (
+                <div ref={chartRef} className="row analytics-section">
+                    <div className="col-md-6 mb-4">
+                        <div className="card shadow-sm">
+                            <div className="card-body">
+                                <h5 className="card-title">Theses by Department</h5>
+                                <ResponsiveContainer width="100%" height={300}>
+                                    <BarChart data={byDepartment}>
+                                        <CartesianGrid strokeDasharray="3 3" />
+                                        <XAxis dataKey="_id" />
+                                        <YAxis />
+                                        <Tooltip />
+                                        <Bar dataKey="count" fill="#8884d8" />
+                                    </BarChart>
+                                </ResponsiveContainer>
+                            </div>
+                        </div>
                     </div>
-                    <div className="col-lg-6">
-                        <Chart title="Theses by Status" data={analyticsData?.thesesByStatus} />
+
+                    <div className="col-md-6 mb-4">
+                        <div className="card shadow-sm">
+                            <div className="card-body">
+                                <h5 className="card-title">Theses by Status</h5>
+                                <ResponsiveContainer width="100%" height={300}>
+                                    <PieChart>
+                                        <Pie
+                                            data={byStatus}
+                                            dataKey="count"
+                                            nameKey="_id"
+                                            cx="50%"
+                                            cy="50%"
+                                            outerRadius={100}
+                                            fill="#82ca9d"
+                                            label
+                                        >
+                                            {byStatus.map((entry, index) => (
+                                                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                            ))}
+                                        </Pie>
+                                        <Tooltip />
+                                        <Legend />
+                                    </PieChart>
+                                </ResponsiveContainer>
+                            </div>
+                        </div>
+                    </div>
+                    <div className="text-end">
+                        <button className="btn btn-outline-secondary" onClick={handleExportPDF}>Export Analytics as PDF</button>
                     </div>
                 </div>
-            </section>
+            )}
 
-            {/* Pending Theses for Review Section */}
-            <div className="card shadow-sm p-4">
-                <h3 className="card-title text-center mb-4">
-                    <FontAwesomeIcon icon={faClock} className="me-2 text-primary" />
-                    Pending Theses for Review
-                </h3>
-                {pendingTheses.length === 0 ? (
-                    <div className="card-body text-center">
-                        <p className="text-muted">No theses are currently pending review.</p>
-                    </div>
+            <h4 className="mt-4 mb-3">Pending Theses</h4>
+            <div className="row">
+                {paginatedTheses.length === 0 ? (
+                    <p className="text-muted">No matching theses found.</p>
                 ) : (
-                    <div className="row g-4">
-                        {pendingTheses.map((thesis) => (
-                            <div key={thesis._id} className="col-lg-6">
-                                <div className="card h-100 shadow-sm border-0">
-                                    <div className="card-body">
-                                        <h5 className="card-title fw-bold text-primary mb-2">{thesis.title}</h5>
-                                        <p className="card-text mb-1">
-                                            <span className="fw-semibold">Author:</span> {thesis.authorName}
-                                        </p>
-                                        <p className="card-text mb-1">
-                                            <span className="fw-semibold">Department:</span> {thesis.department}
-                                        </p>
-                                        <p className="card-text mb-1">
-                                            <span className="fw-semibold">Submitted:</span> {new Date(thesis.submissionDate).toLocaleDateString()}
-                                        </p>
-                                        <p className="card-text text-muted mt-2">
-                                            <FontAwesomeIcon icon={faFileAlt} className="me-2" />
-                                            Status: <span className="text-warning fw-bold">{thesis.status}</span>
-                                        </p>
-                                        <div className="mt-3 d-flex justify-content-around">
-                                            <button
-                                                className="btn btn-success"
-                                                onClick={() => handleAction(thesis._id, 'approve')}
-                                                disabled={isSubmitting}
-                                            >
-                                                <FontAwesomeIcon icon={faCheckCircle} className="me-2" />
-                                                Approve
-                                            </button>
-                                            <button
-                                                className="btn btn-danger"
-                                                onClick={() => handleAction(thesis._id, 'reject')}
-                                                disabled={isSubmitting}
-                                            >
-                                                <FontAwesomeIcon icon={faTimesCircle} className="me-2" />
-                                                Reject
-                                            </button>
-                                        </div>
+                    paginatedTheses.map((thesis) => (
+                        <div className="col-md-6 mb-4" key={thesis._id}>
+                            <div className="card thesis-card">
+                                <div className="card-body">
+                                    <h5 className="thesis-title">{thesis.title}</h5>
+                                    <p><strong>Author:</strong> {thesis.authorName}</p>
+                                    <p><strong>Department:</strong> {thesis.department}</p>
+                                    <p><strong>Year:</strong> {thesis.submissionYear}</p>
+                                    <p><strong>Supervisor:</strong> {thesis.supervisor}</p>
+
+                                    <div className="d-flex action-buttons">
+                                        <button
+                                            className="btn btn-success btn-sm me-2"
+                                            onClick={async () => {
+                                                await axios.put(`http://localhost:5000/api/theses/approve/${thesis._id}`, {}, {
+                                                    headers: { 'x-auth-token': token }
+                                                });
+                                                setPendingTheses(prev => prev.filter(t => t._id !== thesis._id));
+                                            }}
+                                        >
+                                            Approve
+                                        </button>
+                                        <button
+                                            className="btn btn-danger btn-sm"
+                                            onClick={async () => {
+                                                await axios.put(`http://localhost:5000/api/theses/reject/${thesis._id}`, {}, {
+                                                    headers: { 'x-auth-token': token }
+                                                });
+                                                setPendingTheses(prev => prev.filter(t => t._id !== thesis._id));
+                                            }}
+                                        >
+                                            Reject
+                                        </button>
                                     </div>
                                 </div>
                             </div>
-                        ))}
-                    </div>
+                        </div>
+                    ))
                 )}
             </div>
+
+            {totalPages > 1 && (
+                <div className="pagination d-flex justify-content-center mt-4">
+                    {[...Array(totalPages)].map((_, i) => (
+                        <button
+                            key={i}
+                            className={`btn mx-1 ${currentPage === i + 1 ? 'btn-primary' : 'btn-outline-primary'}`}
+                            onClick={() => setCurrentPage(i + 1)}
+                        >
+                            {i + 1}
+                        </button>
+                    ))}
+                </div>
+            )}
         </div>
     );
 };

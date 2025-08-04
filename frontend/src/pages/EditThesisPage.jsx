@@ -20,6 +20,8 @@ const EditThesisPage = () => {
         supervisor: ''
     });
 
+    const [file, setFile] = useState(null);
+    const [currentFileName, setCurrentFileName] = useState('');
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [status, setStatus] = useState('');
@@ -30,7 +32,7 @@ const EditThesisPage = () => {
                 const response = await axios.get(`http://localhost:5000/api/theses/${id}`, {
                     headers: { 'x-auth-token': token }
                 });
-                const { title, authorName, department, submissionYear, abstract, keywords, supervisor, status } = response.data;
+                const { title, authorName, department, submissionYear, abstract, keywords, supervisor, status, fileName } = response.data;
 
                 if (status !== 'pending') {
                     setError('Only pending theses can be edited.');
@@ -44,6 +46,7 @@ const EditThesisPage = () => {
                         keywords: Array.isArray(keywords) ? keywords.join(', ') : keywords,
                         supervisor
                     });
+                    setCurrentFileName(fileName);
                     setStatus(status);
                 }
 
@@ -62,12 +65,28 @@ const EditThesisPage = () => {
         setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
     };
 
+    const handleFileChange = (e) => {
+        setFile(e.target.files[0]);
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-            await axios.put(`http://localhost:5000/api/theses/${id}`, formData, {
-                headers: { 'x-auth-token': token }
+            const formPayload = new FormData();
+            Object.entries(formData).forEach(([key, value]) => {
+                formPayload.append(key, value);
             });
+            if (file) {
+                formPayload.append('thesisFile', file);
+            }
+
+            await axios.put(`http://localhost:5000/api/theses/${id}`, formPayload, {
+                headers: {
+                    'x-auth-token': token,
+                    'Content-Type': 'multipart/form-data'
+                }
+            });
+
             alert('Thesis updated successfully.');
             navigate('/dashboard');
         } catch (err) {
@@ -82,7 +101,7 @@ const EditThesisPage = () => {
     return (
         <div className="edit-thesis-container">
             <h2 className="edit-thesis-title">Edit Thesis</h2>
-            <form className="edit-thesis-form" onSubmit={handleSubmit}>
+            <form className="edit-thesis-form" onSubmit={handleSubmit} encType="multipart/form-data">
                 {['title', 'authorName', 'department', 'submissionYear', 'supervisor'].map(field => (
                     <div className="edit-thesis-field" key={field}>
                         <label>{field.replace(/([A-Z])/g, ' $1')}</label>
@@ -115,6 +134,28 @@ const EditThesisPage = () => {
                         value={formData.keywords}
                         onChange={handleChange}
                         required
+                    />
+                </div>
+
+                {currentFileName && (
+                    <div className="edit-thesis-field">
+                        <label>Current File:</label>
+                        <a
+                            href={`http://localhost:5000/${currentFileName}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                        >
+                            {currentFileName}
+                        </a>
+                    </div>
+                )}
+
+                <div className="edit-thesis-field">
+                    <label>Upload New Thesis File (optional)</label>
+                    <input
+                        type="file"
+                        accept=".pdf,.doc,.docx"
+                        onChange={handleFileChange}
                     />
                 </div>
 
