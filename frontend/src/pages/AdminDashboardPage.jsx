@@ -1,71 +1,98 @@
 // frontend/src/pages/AdminDashboardPage.jsx
 
 // This component is the admin dashboard where administrators and supervisors can
-// approve or reject pending theses. It fetches pending theses from a protected
-// backend endpoint and provides buttons to perform actions on them.
+// approve or reject pending theses and view analytics.
 
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faFileAlt, faClock, faCheckCircle, faTimesCircle, faSpinner } from '@fortawesome/free-solid-svg-icons';
+import {
+    faFileAlt,
+    faClock,
+    faCheckCircle,
+    faTimesCircle,
+    faSpinner,
+    faChartBar, // New icon for the analytics dashboard
+} from '@fortawesome/free-solid-svg-icons';
 import { useNavigate } from 'react-router-dom';
-// Import the new API functions from thesisApi.js
 import { getPendingTheses, updateThesisStatus } from '../api/thesisApi';
 
+// Placeholder for a chart component. You can replace this with a real chart library
+// like Chart.js, Recharts, or Nivo.
+const Chart = ({ title, data }) => (
+    <div className="card shadow-sm h-100">
+        <div className="card-body">
+            <h5 className="card-title text-center text-primary">{title}</h5>
+            <div className="chart-placeholder text-center text-muted p-5">
+                <p>Chart for "{title}"</p>
+                <pre>{JSON.stringify(data, null, 2)}</pre>
+            </div>
+        </div>
+    </div>
+);
+
 const AdminDashboardPage = () => {
-    // State to store the list of pending theses
     const [pendingTheses, setPendingTheses] = useState([]);
-    
-    // State for loading and error handling
+    const [analyticsData, setAnalyticsData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    
-    // State to disable buttons during submission to prevent multiple clicks
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    // Get user and authentication token from the AuthContext
     const { user, token } = useAuth();
     const navigate = useNavigate();
 
-    // Function to fetch pending theses from the backend using the new API function
     const fetchPendingTheses = async () => {
         try {
-            // Call the new API function with the token
             const theses = await getPendingTheses(token);
             setPendingTheses(theses);
         } catch (err) {
             console.error('Error fetching pending theses:', err);
             setError('Failed to fetch pending theses. Please try again later.');
-        } finally {
-            setLoading(false);
         }
     };
 
-    // Use a useEffect hook to fetch data when the component mounts or
-    // when the user or token changes.
+    const fetchAnalyticsData = async () => {
+        try {
+            // Updated API calls to fetch analytics data with authentication headers
+            const config = {
+                headers: {
+                    'x-auth-token': token,
+                },
+            };
+            const [thesesByDeptRes, thesesByStatusRes] = await Promise.all([
+                axios.get('http://localhost:5000/api/theses/analytics/by-department', config),
+                axios.get('http://localhost:5000/api/theses/analytics/by-status', config),
+            ]);
+
+            setAnalyticsData({
+                thesesByDepartment: thesesByDeptRes.data,
+                thesesByStatus: thesesByStatusRes.data,
+            });
+        } catch (err) {
+            console.error('Error fetching analytics data:', err);
+            // setError('Failed to fetch analytics data.');
+        }
+    };
+
     useEffect(() => {
-        // Check for user and token to avoid fetching with invalid credentials
         if (user && token && (user.role === 'admin' || user.role === 'supervisor')) {
-            fetchPendingTheses();
+            // Fetch both pending theses and analytics data
+            Promise.all([fetchPendingTheses(), fetchAnalyticsData()])
+                .finally(() => setLoading(false));
         } else if (user) {
-            // If a user is logged in but lacks the required role, redirect them
             navigate('/dashboard');
         } else {
-            // If no user is logged in, finish loading state and let
-            // the main routing handle the unauthenticated user.
             setLoading(false);
         }
-    }, [user, token, navigate]); // Dependencies ensure this effect runs when user or token changes
+    }, [user, token, navigate]);
 
-    // Function to handle the approval or rejection of a thesis using the new API function
     const handleAction = async (thesisId, action) => {
         setIsSubmitting(true);
         try {
-            // Call the new API function with the thesis ID, action, and token
             const result = await updateThesisStatus(thesisId, action, token);
             if (result.success) {
-                // After a successful action, refetch the pending theses to update the list
-                fetchPendingTheses();
+                // Refetch both lists to update the dashboard
+                await Promise.all([fetchPendingTheses(), fetchAnalyticsData()]);
             } else {
                 setError(result.error);
             }
@@ -77,17 +104,15 @@ const AdminDashboardPage = () => {
         }
     };
 
-    // Render loading state while data is being fetched
     if (loading) {
         return (
             <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '80vh' }}>
                 <FontAwesomeIcon icon={faSpinner} spin size="2x" className="text-secondary me-2" />
-                <p className="text-secondary fs-5">Loading pending theses...</p>
+                <p className="text-secondary fs-5">Loading dashboard data...</p>
             </div>
         );
     }
 
-    // Render an error message if an error occurred during fetching
     if (error) {
         return (
             <div className="container mt-5">
@@ -96,20 +121,36 @@ const AdminDashboardPage = () => {
         );
     }
 
-    // Final client-side check to ensure only authorized users see the content.
-    // The backend also performs this check, but this provides a better UX.
     if (!user || (user.role !== 'admin' && user.role !== 'supervisor')) {
         return <div className="container mt-5"><div className="alert alert-warning text-center">You do not have permission to view this page.</div></div>;
     }
 
-    // Render the main dashboard content
     return (
         <div className="container mt-5">
+            <h2 className="text-center mb-4">
+                <FontAwesomeIcon icon={faChartBar} className="me-2 text-primary" />
+                Administrative Dashboard
+            </h2>
+
+            {/* Analytics Dashboard Section */}
+            <section className="analytics-section mb-5">
+                <h3 className="text-center text-secondary mb-4">Repository Analytics</h3>
+                <div className="row g-4">
+                    <div className="col-lg-6">
+                        <Chart title="Theses by Department" data={analyticsData?.thesesByDepartment} />
+                    </div>
+                    <div className="col-lg-6">
+                        <Chart title="Theses by Status" data={analyticsData?.thesesByStatus} />
+                    </div>
+                </div>
+            </section>
+
+            {/* Pending Theses for Review Section */}
             <div className="card shadow-sm p-4">
-                <h2 className="card-title text-center mb-4">
+                <h3 className="card-title text-center mb-4">
                     <FontAwesomeIcon icon={faClock} className="me-2 text-primary" />
                     Pending Theses for Review
-                </h2>
+                </h3>
                 {pendingTheses.length === 0 ? (
                     <div className="card-body text-center">
                         <p className="text-muted">No theses are currently pending review.</p>
@@ -134,7 +175,6 @@ const AdminDashboardPage = () => {
                                             <FontAwesomeIcon icon={faFileAlt} className="me-2" />
                                             Status: <span className="text-warning fw-bold">{thesis.status}</span>
                                         </p>
-
                                         <div className="mt-3 d-flex justify-content-around">
                                             <button
                                                 className="btn btn-success"

@@ -1,0 +1,70 @@
+/* frontend/src/styles/EditThesisPage.css */
+.edit-thesis-container {
+    max-width: 700px;
+    margin: 50px auto;
+    padding: 30px;
+    background: #fefefe;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+}
+
+.edit-thesis-title {
+    text-align: center;
+    font-size: 2rem;
+    margin-bottom: 1.5rem;
+    color: #333;
+}
+
+.edit-thesis-form label {
+    font-weight: 600;
+    display: block;
+    margin-bottom: 6px;
+    color: #444;
+}
+
+.edit-thesis-field {
+    margin-bottom: 20px;
+}
+
+.edit-thesis-field input,
+.edit-thesis-field textarea {
+    width: 100%;
+    padding: 10px;
+    font-size: 1rem;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    transition: border 0.2s ease-in-out;
+}
+
+.edit-thesis-field input:focus,
+.edit-thesis-field textarea:focus {
+    border-color: #0056b3;
+    outline: none;
+}
+
+.edit-thesis-button {
+    width: 100%;
+    padding: 12px;
+    background-color: #0056b3;
+    color: white;
+    font-weight: bold;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.3s ease-in-out;
+}
+
+.edit-thesis-button:hover {
+    background-color: #003d80;
+}
+
+.edit-thesis-error {
+    max-width: 700px;
+    margin: 2rem auto;
+    padding: 1rem;
+    background: #ffe5e5;
+    color: #a33;
+    border: 1px solid #a33;
+    border-radius: 8px;
+    text-align: center;
+}

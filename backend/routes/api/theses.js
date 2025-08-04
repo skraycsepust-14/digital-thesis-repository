@@ -5,34 +5,28 @@ const auth = require('../../middleware/auth');
 const role = require('../../middleware/role');
 const Thesis = require('../../models/Thesis');
 const thesisLogger = require('../../middleware/thesisLogger');
+const multer = require('multer');
+const path = require('path');
 
-// @route   GET api/theses
-// @desc    Get all public theses with optional filtering and sorting
-// @access  Public
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => cb(null, 'uploads/'),
+    filename: (req, file, cb) => cb(null, `${Date.now()}-${file.originalname}`)
+});
+const upload = multer({ storage });
+
 router.get('/', async (req, res) => {
     try {
         const { department, supervisor, submissionYear, sort } = req.query;
         let filter = {};
-        if (department) {
-            filter.department = department;
-        }
-        if (supervisor) {
-            filter.supervisor = supervisor;
-        }
-        if (submissionYear) {
-            filter.submissionYear = submissionYear;
-        }
+        if (department) filter.department = department;
+        if (supervisor) filter.supervisor = supervisor;
+        if (submissionYear) filter.submissionYear = submissionYear;
 
         let sortOption = {};
-        if (sort === 'oldest') {
-            sortOption.submissionDate = 1;
-        } else if (sort === 'title_asc') {
-            sortOption.title = 1;
-        } else if (sort === 'title_desc') {
-            sortOption.title = -1;
-        } else {
-            sortOption.submissionDate = -1;
-        }
+        if (sort === 'oldest') sortOption.submissionDate = 1;
+        else if (sort === 'title_asc') sortOption.title = 1;
+        else if (sort === 'title_desc') sortOption.title = -1;
+        else sortOption.submissionDate = -1;
 
         const theses = await Thesis.find({ ...filter, status: 'approved' }).sort(sortOption);
         res.json(theses);
@@ -42,46 +36,27 @@ router.get('/', async (req, res) => {
     }
 });
 
-// @route   GET api/theses/search
-// @desc    Search public theses by title, author, or abstract with optional filtering and sorting
-// @access  Public
 router.get('/search', async (req, res) => {
     try {
         const { q, department, supervisor, submissionYear, sort } = req.query;
         let filter = {};
-
-        // Build the search query
         if (q) {
-            const regex = new RegExp(q, 'i'); // 'i' for case-insensitive
+            const regex = new RegExp(q, 'i');
             filter.$or = [
                 { title: regex },
                 { authorName: regex },
                 { abstract: regex }
             ];
         }
-
-        // Apply additional filters
-        if (department) {
-            filter.department = department;
-        }
-        if (supervisor) {
-            filter.supervisor = supervisor;
-        }
-        if (submissionYear) {
-            filter.submissionYear = submissionYear;
-        }
+        if (department) filter.department = department;
+        if (supervisor) filter.supervisor = supervisor;
+        if (submissionYear) filter.submissionYear = submissionYear;
 
         let sortOption = {};
-        if (sort === 'oldest') {
-            sortOption.submissionDate = 1;
-        } else if (sort === 'title_asc') {
-            sortOption.title = 1;
-        } else if (sort === 'title_desc') {
-            sortOption.title = -1;
-        } else {
-            // Default sort for search is relevance or newest
-            sortOption.submissionDate = -1;
-        }
+        if (sort === 'oldest') sortOption.submissionDate = 1;
+        else if (sort === 'title_asc') sortOption.title = 1;
+        else if (sort === 'title_desc') sortOption.title = -1;
+        else sortOption.submissionDate = -1;
 
         const theses = await Thesis.find({ ...filter, status: 'approved' }).sort(sortOption);
         res.json(theses);
@@ -91,9 +66,6 @@ router.get('/search', async (req, res) => {
     }
 });
 
-// @route   GET api/theses/departments
-// @desc    Get unique list of all departments
-// @access  Public
 router.get('/departments', async (req, res) => {
     try {
         const departments = await Thesis.distinct('department');
@@ -104,9 +76,6 @@ router.get('/departments', async (req, res) => {
     }
 });
 
-// @route   GET api/theses/supervisors
-// @desc    Get unique list of all supervisors
-// @access  Public
 router.get('/supervisors', async (req, res) => {
     try {
         const supervisors = await Thesis.distinct('supervisor');
@@ -117,9 +86,33 @@ router.get('/supervisors', async (req, res) => {
     }
 });
 
-// @route   GET api/theses/pending
-// @desc    Get all pending theses
-// @access  Private (Admin/Supervisor Only)
+router.get('/analytics/by-department', auth, role(['admin', 'supervisor']), async (req, res) => {
+    try {
+        const data = await Thesis.aggregate([
+            { $match: { status: 'approved' } },
+            { $group: { _id: '$department', count: { $sum: 1 } } },
+            { $sort: { _id: 1 } }
+        ]);
+        res.json(data);
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Server Error');
+    }
+});
+
+router.get('/analytics/by-status', auth, role(['admin', 'supervisor']), async (req, res) => {
+    try {
+        const data = await Thesis.aggregate([
+            { $group: { _id: '$status', count: { $sum: 1 } } },
+            { $sort: { _id: 1 } }
+        ]);
+        res.json(data);
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Server Error');
+    }
+});
+
 router.get('/pending', auth, role(['admin', 'supervisor']), async (req, res) => {
     try {
         const theses = await Thesis.find({ status: 'pending' });
@@ -130,14 +123,22 @@ router.get('/pending', auth, role(['admin', 'supervisor']), async (req, res) => 
     }
 });
 
-// @route   GET api/theses/:id
-// @desc    Get thesis by ID
-// @access  Public
-router.get('/:id', async (req, res) => {
+router.get('/my-theses', auth, async (req, res) => {
+    try {
+        const theses = await Thesis.find({ user: req.user.id }).sort({ submissionDate: -1 });
+        res.json(theses);
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Server Error');
+    }
+});
+
+// 🔥 FIXED: This route must be protected to allow access to req.user
+router.get('/:id', auth, async (req, res) => {
     try {
         const thesis = await Thesis.findById(req.params.id);
-        if (!thesis || (thesis.status !== 'approved' && (!req.user || (req.user.role !== 'admin' && req.user.role !== 'supervisor')))) {
-            return res.status(404).json({ msg: 'Thesis not found or not approved' });
+        if (!thesis || (thesis.status !== 'approved' && (!req.user || (req.user.role !== 'admin' && req.user.role !== 'supervisor' && req.user.id !== thesis.user.toString())))) {
+            return res.status(404).json({ msg: 'Thesis not found or not authorized' });
         }
         res.json(thesis);
     } catch (err) {
@@ -149,12 +150,21 @@ router.get('/:id', async (req, res) => {
     }
 });
 
-// @route   POST api/theses
-// @desc    Create a thesis
-// @access  Private
-router.post('/', auth, async (req, res) => {
+router.post('/', auth, upload.single('thesisFile'), async (req, res) => {
     try {
-        const { title, authorName, department, submissionYear, abstract, keywords, supervisor } = req.body;
+        const {
+            title,
+            authorName,
+            department,
+            submissionYear,
+            abstract,
+            keywords,
+            supervisor
+        } = req.body;
+
+        if (!req.file) {
+            return res.status(400).json({ msg: 'Thesis file is required' });
+        }
 
         const newThesis = new Thesis({
             user: req.user.id,
@@ -163,27 +173,24 @@ router.post('/', auth, async (req, res) => {
             department,
             submissionYear,
             abstract,
-            keywords,
+            keywords: keywords.split(',').map(k => k.trim()),
             supervisor,
+            filePath: req.file.path,
+            fileName: req.file.originalname
         });
 
         const thesis = await newThesis.save();
         res.json(thesis);
     } catch (err) {
-        console.error(err.message);
+        console.error('Thesis upload error:', err.message);
         res.status(500).send('Server Error');
     }
 });
 
-// @route   PUT api/theses/approve/:id
-// @desc    Approve a thesis
-// @access  Private (Admin/Supervisor Only)
 router.put('/approve/:id', auth, role(['admin', 'supervisor']), thesisLogger, async (req, res) => {
     try {
         const thesis = await Thesis.findById(req.params.id);
-        if (!thesis) {
-            return res.status(404).json({ msg: 'Thesis not found' });
-        }
+        if (!thesis) return res.status(404).json({ msg: 'Thesis not found' });
         thesis.status = 'approved';
         await thesis.save();
         res.json(thesis);
@@ -193,15 +200,10 @@ router.put('/approve/:id', auth, role(['admin', 'supervisor']), thesisLogger, as
     }
 });
 
-// @route   PUT api/theses/reject/:id
-// @desc    Reject a thesis
-// @access  Private (Admin/Supervisor Only)
 router.put('/reject/:id', auth, role(['admin', 'supervisor']), thesisLogger, async (req, res) => {
     try {
         const thesis = await Thesis.findById(req.params.id);
-        if (!thesis) {
-            return res.status(404).json({ msg: 'Thesis not found' });
-        }
+        if (!thesis) return res.status(404).json({ msg: 'Thesis not found' });
         thesis.status = 'rejected';
         await thesis.save();
         res.json(thesis);
@@ -211,13 +213,41 @@ router.put('/reject/:id', auth, role(['admin', 'supervisor']), thesisLogger, asy
     }
 });
 
-// @route   GET api/theses/my-theses
-// @desc    Get theses submitted by the current user
-// @access  Private
-router.get('/my-theses', auth, async (req, res) => {
+router.delete('/:id', auth, async (req, res) => {
     try {
-        const theses = await Thesis.find({ user: req.user.id }).sort({ submissionDate: -1 });
-        res.json(theses);
+        const thesis = await Thesis.findById(req.params.id);
+        if (!thesis) return res.status(404).json({ msg: 'Thesis not found' });
+        if (thesis.user.toString() !== req.user.id && req.user.role !== 'admin') {
+            return res.status(401).json({ msg: 'Not authorized' });
+        }
+        await thesis.remove();
+        res.json({ msg: 'Thesis removed' });
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Server Error');
+    }
+});
+
+router.put('/:id', auth, async (req, res) => {
+    try {
+        const thesis = await Thesis.findById(req.params.id);
+        if (!thesis) return res.status(404).json({ msg: 'Thesis not found' });
+        if (thesis.user.toString() !== req.user.id || thesis.status !== 'pending') {
+            return res.status(401).json({ msg: 'Not authorized or thesis already reviewed' });
+        }
+
+        const fieldsToUpdate = {
+            title: req.body.title,
+            authorName: req.body.authorName,
+            department: req.body.department,
+            submissionYear: req.body.submissionYear,
+            abstract: req.body.abstract,
+            keywords: Array.isArray(req.body.keywords) ? req.body.keywords : req.body.keywords.split(',').map(k => k.trim()),
+            supervisor: req.body.supervisor
+        };
+
+        const updated = await Thesis.findByIdAndUpdate(req.params.id, { $set: fieldsToUpdate }, { new: true });
+        res.json(updated);
     } catch (err) {
         console.error(err.message);
         res.status(500).send('Server Error');

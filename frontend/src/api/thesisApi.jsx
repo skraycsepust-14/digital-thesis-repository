@@ -1,61 +1,54 @@
 // frontend/src/api/thesisApi.js
 import axios from 'axios';
 
-// Function to fetch public theses for the homepage
-export const getPublicTheses = async () => {
+const API_URL = 'http://localhost:5000/api/theses';
+
+// Function to get a list of all pending theses
+export const getPendingTheses = async (token) => {
     try {
-        // We use the full URL to ensure it works regardless of where the app is hosted
-        const response = await axios.get('http://localhost:5000/api/theses/public');
+        const config = {
+            headers: {
+                'x-auth-token': token,
+            },
+        };
+        const response = await axios.get(`${API_URL}/pending`, config);
         return response.data;
-    } catch (error) {
-        console.error('Error fetching public theses:', error);
-        // Instead of throwing an error, we return an empty array.
-        // This ensures the calling component (HomePage) always receives a list.
-        return [];
+    } catch (err) {
+        console.error('Error fetching pending theses:', err);
+        throw err;
     }
 };
 
-// New function to fetch theses for the logged-in user
-export const getUsersTheses = async () => {
+// Function to get a list of all theses submitted by the current user
+export const getMyTheses = async (token) => {
     try {
-        // The Authorization header is automatically attached by the AuthContext Axios interceptor
-        const response = await axios.get('http://localhost:5000/api/theses/me');
+        const config = {
+            headers: {
+                'x-auth-token': token,
+            },
+        };
+        const response = await axios.get(`${API_URL}/my-theses`, config);
         return response.data;
-    } catch (error) {
-        console.error('Error fetching user theses:', error);
-        // Instead of throwing an error, we return an empty array.
-        // This ensures the calling component (DashboardPage) always receives a list.
-        return [];
+    } catch (err) {
+        console.error('Error fetching user theses:', err);
+        throw err;
     }
 };
 
-// New function to fetch pending theses for admin/supervisor
-export const getPendingTheses = async () => {
-    try {
-        // This request also needs authentication and authorization.
-        // The AuthContext sets up the Authorization header globally for axios.
-        const response = await axios.get('http://localhost:5000/api/theses/pending');
-        return response.data;
-    } catch (error) {
-        // It's important to handle the 401/403 errors gracefully on the frontend.
-        console.error('Error fetching pending theses:', error.response?.data?.msg || error.message);
-        // Return an empty array to prevent the component from crashing.
-        return [];
-    }
-};
-
-// New function to handle the approval or rejection of a thesis
+// Function to update the status of a thesis (approve or reject)
 export const updateThesisStatus = async (thesisId, action, token) => {
     try {
-        // The endpoint URL dynamically changes based on the action ('approve' or 'reject')
-        const response = await axios.put(`http://localhost:5000/api/theses/${thesisId}/${action}`, {}, {
+        const config = {
             headers: {
-                Authorization: `Bearer ${token}`,
+                'Content-Type': 'application/json',
+                'x-auth-token': token,
             },
-        });
+        };
+
+        const response = await axios.put(`${API_URL}/${action}/${thesisId}`, {}, config);
         return { success: true, data: response.data };
-    } catch (error) {
-        console.error(`Error updating thesis status for action "${action}":`, error.response?.data?.msg || error.message);
-        return { success: false, error: error.response?.data?.msg || 'Failed to update thesis status.' };
+    } catch (err) {
+        console.error(`Error updating thesis status for action "${action}":`, err);
+        return { success: false, error: err.response.data.msg || 'An error occurred.' };
     }
 };

@@ -20,7 +20,7 @@ import ThesisToolsPage from './pages/ThesisToolsPage';
 import ErrorBoundary from './components/ErrorBoundary';
 import SearchResultPage from './pages/SearchResultPage';
 import AIAnalysisPage from './pages/AIAnalysisPage'; // NEW: Import AIAnalysisPage
-
+import EditThesisPage from './pages/EditThesisPage'; // Import EditThesisPage
 import './App.css';
 import './index.css';
 import './styles/DarkTheme.css';
@@ -73,7 +73,7 @@ const App = () => {
                 {/* Admin/Supervisor Protected Routes */}
                 <Route path="/admin-dashboard" element={<ProtectedRoute requiredRoles={['admin', 'supervisor']}><AdminDashboardPage /></ProtectedRoute>} />
                 <Route path="/manage-users" element={<ProtectedRoute requiredRoles={['admin']}><ManageUsersPage /></ProtectedRoute>} />
-
+                <Route path="/edit-thesis/:id" element={<ProtectedRoute><EditThesisPage /></ProtectedRoute>} />
                 {/* Catch-all for 404 - Optional */}
                 <Route path="*" element={<h1 className="text-center mt-5">404 - Page Not Found</h1>} />
               </Routes>

@@ -9,7 +9,6 @@ connectDB();
 
 app.use(express.json({ extended: false }));
 app.use(cors());
-
 // Serve static files from the 'uploads' directory
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
@@ -29,6 +28,9 @@ if (process.env.NODE_ENV === 'production') {
         res.sendFile(path.resolve(__dirname, '..', 'frontend', 'dist', 'index.html'));
     });
 }
+app.get('/', (req, res) => {
+  res.send('API is running');
+});
 
 const PORT = process.env.PORT || 5000;
 
