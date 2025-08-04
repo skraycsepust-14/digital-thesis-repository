@@ -1,3 +1,5 @@
+// backend/routes/api/theses.js
+
 const express = require('express');
 const router = express.Router();
 const auth = require('../../middleware/auth');
@@ -6,16 +8,17 @@ const Thesis = require('../../models/Thesis');
 const thesisLogger = require('../../middleware/thesisLogger');
 const multer = require('multer');
 const path = require('path');
-const fs = require('fs');
 
-// Multer config
+// Multer config for uploads
 const storage = multer.diskStorage({
     destination: (req, file, cb) => cb(null, 'uploads/'),
     filename: (req, file, cb) => cb(null, `${Date.now()}-${file.originalname}`)
 });
 const upload = multer({ storage });
 
-// PUBLIC: Get approved theses with optional filtering/sorting
+// --- Public Routes ---
+
+// Get all approved theses with optional filters and sorting
 router.get('/', async (req, res) => {
     try {
         const { department, supervisor, submissionYear, sort } = req.query;
@@ -38,7 +41,7 @@ router.get('/', async (req, res) => {
     }
 });
 
-// PUBLIC: Search theses
+// Search approved theses
 router.get('/search', async (req, res) => {
     try {
         const { q, department, supervisor, submissionYear, sort } = req.query;
@@ -69,27 +72,31 @@ router.get('/search', async (req, res) => {
     }
 });
 
-// PUBLIC: Distinct fields
-router.get('/departments', async (_, res) => {
+// Get unique departments
+router.get('/departments', async (_req, res) => {
     try {
         const departments = await Thesis.distinct('department');
         res.json(departments);
     } catch (err) {
+        console.error(err.message);
         res.status(500).send('Server Error');
     }
 });
 
-router.get('/supervisors', async (_, res) => {
+// Get unique supervisors
+router.get('/supervisors', async (_req, res) => {
     try {
         const supervisors = await Thesis.distinct('supervisor');
         res.json(supervisors);
     } catch (err) {
+        console.error(err.message);
         res.status(500).send('Server Error');
     }
 });
 
-// PRIVATE (Admin/Supervisor): Analytics
-router.get('/analytics/by-department', auth, role(['admin', 'supervisor']), async (_, res) => {
+// --- Analytics Routes (Admin/Supervisor only) ---
+
+router.get('/analytics/by-department', auth, role(['admin', 'supervisor']), async (_req, res) => {
     try {
         const data = await Thesis.aggregate([
             { $match: { status: 'approved' } },
@@ -98,11 +105,12 @@ router.get('/analytics/by-department', auth, role(['admin', 'supervisor']), asyn
         ]);
         res.json(data);
     } catch (err) {
+        console.error(err.message);
         res.status(500).send('Server Error');
     }
 });
 
-router.get('/analytics/by-status', auth, role(['admin', 'supervisor']), async (_, res) => {
+router.get('/analytics/by-status', auth, role(['admin', 'supervisor']), async (_req, res) => {
     try {
         const data = await Thesis.aggregate([
             { $group: { _id: '$status', count: { $sum: 1 } } },
@@ -110,49 +118,71 @@ router.get('/analytics/by-status', auth, role(['admin', 'supervisor']), async (_
         ]);
         res.json(data);
     } catch (err) {
+        console.error(err.message);
         res.status(500).send('Server Error');
     }
 });
 
-// PRIVATE: Get pending
-router.get('/pending', auth, role(['admin', 'supervisor']), async (_, res) => {
+// --- Protected Routes ---
+
+// Get pending theses
+router.get('/pending', auth, role(['admin', 'supervisor']), async (_req, res) => {
     try {
         const theses = await Thesis.find({ status: 'pending' });
         res.json(theses);
     } catch (err) {
+        console.error(err.message);
         res.status(500).send('Server Error');
     }
 });
 
-// PRIVATE: Get current user's theses
+// Get theses uploaded by the logged-in user
 router.get('/my-theses', auth, async (req, res) => {
     try {
         const theses = await Thesis.find({ user: req.user.id }).sort({ submissionDate: -1 });
         res.json(theses);
     } catch (err) {
+        console.error(err.message);
         res.status(500).send('Server Error');
     }
 });
 
-// PRIVATE: Get thesis by ID
+// Get a specific thesis (admin, supervisor, or owner if not approved)
 router.get('/:id', auth, async (req, res) => {
     try {
         const thesis = await Thesis.findById(req.params.id);
-        if (!thesis || (thesis.status !== 'approved' && req.user.id !== thesis.user.toString() && !['admin', 'supervisor'].includes(req.user.role))) {
+        if (
+            !thesis ||
+            (thesis.status !== 'approved' &&
+                req.user.role !== 'admin' &&
+                req.user.role !== 'supervisor' &&
+                thesis.user.toString() !== req.user.id)
+        ) {
             return res.status(404).json({ msg: 'Thesis not found or not authorized' });
         }
         res.json(thesis);
     } catch (err) {
+        console.error(err.message);
         res.status(500).send('Server Error');
     }
 });
 
-// PRIVATE: Upload thesis
+// Upload a thesis (with file)
 router.post('/', auth, upload.single('thesisFile'), async (req, res) => {
     try {
-        const { title, authorName, department, submissionYear, abstract, keywords, supervisor } = req.body;
+        const {
+            title,
+            authorName,
+            department,
+            submissionYear,
+            abstract,
+            keywords,
+            supervisor
+        } = req.body;
 
-        if (!req.file) return res.status(400).json({ msg: 'Thesis file is required' });
+        if (!req.file) {
+            return res.status(400).json({ msg: 'Thesis file is required' });
+        }
 
         const newThesis = new Thesis({
             user: req.user.id,
@@ -170,46 +200,12 @@ router.post('/', auth, upload.single('thesisFile'), async (req, res) => {
         const thesis = await newThesis.save();
         res.json(thesis);
     } catch (err) {
+        console.error('Thesis upload error:', err.message);
         res.status(500).send('Server Error');
     }
 });
 
-// PRIVATE: Update thesis (optional file)
-router.put('/:id', auth, upload.single('thesisFile'), async (req, res) => {
-    try {
-        const thesis = await Thesis.findById(req.params.id);
-        if (!thesis) return res.status(404).json({ msg: 'Thesis not found' });
-
-        if (thesis.user.toString() !== req.user.id || thesis.status !== 'pending') {
-            return res.status(401).json({ msg: 'Not authorized or thesis already reviewed' });
-        }
-
-        if (req.file) {
-            // Delete old file
-            if (thesis.filePath && fs.existsSync(thesis.filePath)) {
-                fs.unlinkSync(thesis.filePath);
-            }
-            thesis.filePath = req.file.path;
-            thesis.fileName = req.file.originalname;
-        }
-
-        const { title, authorName, department, submissionYear, abstract, keywords, supervisor } = req.body;
-        thesis.title = title;
-        thesis.authorName = authorName;
-        thesis.department = department;
-        thesis.submissionYear = submissionYear;
-        thesis.abstract = abstract;
-        thesis.keywords = Array.isArray(keywords) ? keywords : keywords.split(',').map(k => k.trim());
-        thesis.supervisor = supervisor;
-
-        const updated = await thesis.save();
-        res.json(updated);
-    } catch (err) {
-        res.status(500).send('Server Error');
-    }
-});
-
-// PRIVATE: Approve/reject
+// Approve a thesis
 router.put('/approve/:id', auth, role(['admin', 'supervisor']), thesisLogger, async (req, res) => {
     try {
         const thesis = await Thesis.findById(req.params.id);
@@ -218,10 +214,12 @@ router.put('/approve/:id', auth, role(['admin', 'supervisor']), thesisLogger, as
         await thesis.save();
         res.json(thesis);
     } catch (err) {
+        console.error(err.message);
         res.status(500).send('Server Error');
     }
 });
 
+// Reject a thesis
 router.put('/reject/:id', auth, role(['admin', 'supervisor']), thesisLogger, async (req, res) => {
     try {
         const thesis = await Thesis.findById(req.params.id);
@@ -230,11 +228,42 @@ router.put('/reject/:id', auth, role(['admin', 'supervisor']), thesisLogger, asy
         await thesis.save();
         res.json(thesis);
     } catch (err) {
+        console.error(err.message);
         res.status(500).send('Server Error');
     }
 });
 
-// PRIVATE: Delete thesis
+// Edit a thesis (only by user and if still pending)
+router.put('/:id', auth, async (req, res) => {
+    try {
+        const thesis = await Thesis.findById(req.params.id);
+        if (!thesis) return res.status(404).json({ msg: 'Thesis not found' });
+
+        if (thesis.user.toString() !== req.user.id || thesis.status !== 'pending') {
+            return res.status(401).json({ msg: 'Not authorized or thesis already reviewed' });
+        }
+
+        const fieldsToUpdate = {
+            title: req.body.title,
+            authorName: req.body.authorName,
+            department: req.body.department,
+            submissionYear: req.body.submissionYear,
+            abstract: req.body.abstract,
+            keywords: Array.isArray(req.body.keywords)
+                ? req.body.keywords
+                : req.body.keywords.split(',').map(k => k.trim()),
+            supervisor: req.body.supervisor
+        };
+
+        const updated = await Thesis.findByIdAndUpdate(req.params.id, { $set: fieldsToUpdate }, { new: true });
+        res.json(updated);
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Server Error');
+    }
+});
+
+// Delete a thesis (only by user or admin)
 router.delete('/:id', auth, async (req, res) => {
     try {
         const thesis = await Thesis.findById(req.params.id);
@@ -244,14 +273,10 @@ router.delete('/:id', auth, async (req, res) => {
             return res.status(401).json({ msg: 'Not authorized' });
         }
 
-        // Delete file
-        if (thesis.filePath && fs.existsSync(thesis.filePath)) {
-            fs.unlinkSync(thesis.filePath);
-        }
-
-        await thesis.remove();
+        await thesis.deleteOne();
         res.json({ msg: 'Thesis removed' });
     } catch (err) {
+        console.error(err.message);
         res.status(500).send('Server Error');
     }
 });
