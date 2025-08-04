@@ -1,43 +1,77 @@
-Thesis Management SystemA web application designed to streamline the process of managing academic theses. It provides a platform for students to upload their thesis documents, supervisors to review and manage them, and administrators to oversee the entire system.✨ FeaturesRole-Based Authentication: Secure login for students, supervisors, and administrators using Firebase and a custom JWT-based backend.Student Dashboard: A personal dashboard for students to upload, track, and manage their thesis submissions.Supervisor/Admin Dashboard: A dedicated dashboard for faculty to review, approve, or reject theses and manage user roles.Thesis Management: Functionality to view, edit, and delete thesis records.Profile Management: Users can view and update their personal profile information.AI Analysis: Leverage the Gemini API to analyze and provide feedback on thesis documents, helping students improve their work.Responsive UI: A clean and modern user interface built with React and Tailwind CSS, ensuring a great experience on any device.🚀 Technologies UsedFrontend:ReactReact Router DOMTailwind CSS (for styling)Firebase Authentication (for Google Sign-In)Axios (for API requests)Backend:Node.js & Express.jsMongoDB (for the database)Mongoose (for MongoDB object modeling)JWT (JSON Web Tokens) for authenticationFirebase Admin SDK (to verify Firebase tokens)Bcryptjs (for password hashing)Gemini API: Used for powering the AI analysis service.🔧 PrerequisitesBefore you begin, ensure you have the following installed:Node.js (version 14 or higher recommended)npm (Node Package Manager)A running instance of MongoDBA Firebase project with Google Authentication enabled💻 Installation & SetupFollow these steps to get the project up and running on your local machine.1. Backend SetupNavigate to the backend directory:cd backend
-Install backend dependencies:npm install
-Create a .env file in the backend folder and add the following environment variables. Replace the placeholder values with your actual credentials.MONGO_URI=mongodb://127.0.0.1:27017/your-database-name
-JWT_SECRET=your_super_secret_jwt_key
-# Add your Firebase Admin SDK configuration as a single JSON string
-FIREBASE_ADMIN_SDK_CONFIG={"type": "service_account", "project_id": "your-project-id", ...}
-Start the backend server:npm run dev
-The server will run on http://localhost:5000.2. Frontend SetupNavigate to the frontend directory:cd ../frontend
-Install frontend dependencies:npm install
-Create a .env.local file in the frontend folder and add your Firebase client-side configuration:REACT_APP_FIREBASE_API_KEY=your_firebase_api_key
-REACT_APP_FIREBASE_AUTH_DOMAIN=your_auth_domain
-REACT_APP_FIREBASE_PROJECT_ID=your_project_id
-REACT_APP_FIREBASE_STORAGE_BUCKET=your_storage_bucket
-REACT_APP_FIREBASE_MESSAGING_SENDER_ID=your_messaging_sender_id
-REACT_APP_FIREBASE_APP_ID=your_app_id
-Start the frontend application:npm start
-The application will open in your default browser at http://localhost:3000.⚙️ UsageOnce the application is running, you can:Register: New users can sign up with a Google account.Login: Existing users can log in via Google.Student: After logging in, students can upload their thesis and view its status on their dashboard. They can also use the AI analysis tool.Supervisor/Admin: Users with elevated roles can access their respective dashboards to manage theses and other users.📂 Project Structurethesis-management/
-├── backend/
-│   ├── config/
-│   ├── middleware/
-│   │   ├── auth.js
-│   │   └── authorize.js
-│   ├── models/
-│   ├── routes/
-│   │   └── api/
-│   │       ├── auth.js
-│   │       ├── users.js
-│   │       └── ai-service.js  <-- NEW AI Service Route
-│   └── server.js
-├── frontend/
-│   ├── public/
-│   ├── src/
-│   │   ├── api/
-│   │   ├── components/
-│   │   ├── context/
-│   │   │   └── AuthContext.jsx
-│   │   ├── pages/
-│   │   ├── styles/
-│   │   ├── App.jsx
-│   │   └── index.js
-│   └── package.json
-└── README.md
-📝 LicenseThis project is licensed under the MIT License.
+📘 Digital Thesis Repository
+A full-stack web application for managing, uploading, and exploring academic theses with powerful search, user roles, and AI-driven writing tools.
+________________________________________
+🚀 Features
+🎓 User Roles
+•	Student: Upload and manage their theses
+•	Supervisor: Review theses, manage students
+•	Admin: Manage users, dashboards, analytics
+🔐 Authentication
+•	JWT-based login/logout
+•	Secure role-based route protection
+📚 Thesis Management
+•	Upload metadata + file
+•	View and approve/reject submissions
+•	Analytics dashboard for thesis stats
+🔍 Search + Filters
+•	Department, year, supervisor
+•	Sort: Newest/Oldest
+•	Results in detailed list format with metadata
+•	Pagination included
+🛠️ Admin Tools
+•	View and modify user roles
+•	Delete users
+•	Filter/sort by roles
+•	Track role changes (log optional)
+🤖 AI-Powered Thesis Tools
+Accessible from Thesis Tools page for all roles:
+•	Grammar & spelling checker
+•	Abstract generator
+•	Title generator
+•	Keyword extractor
+•	Plagiarism check (simulated)
+•	Reference formatter
+•	Text simplifier
+Each tool includes its own input/output section, animated tabs, and copy functionality.
+________________________________________
+🧱 Tech Stack
+Frontend
+•	React (Hooks + Context)
+•	React Router
+•	Axios
+•	Bootstrap 5 + FontAwesome
+•	Framer Motion (tab animations)
+Backend (assumed)
+•	Node.js + Express
+•	MongoDB (users & theses)
+•	JWT authentication
+•	AI tools route: /api/ai/{tool}
+________________________________________
+🗂️ Folder Structure (Frontend)
+/src
+  /components
+  /pages
+  /context
+  /styles
+  App.jsx
+  main.jsx
+________________________________________
+🧪 Running the Project
+Frontend
+cd frontend
+npm install
+npm start
+Backend (assumed)
+cd backend
+npm install
+npm run dev
+________________________________________
+🔧 To Do / Improvements
+•	Dark mode toggle
+•	Audit logs
+•	PDF preview
+•	Email confirmations
+•	Admin notifications
+________________________________________
+📄 License
+MIT License — Open-source for educational use.
