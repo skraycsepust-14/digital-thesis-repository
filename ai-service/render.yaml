@@ -1,10 +1,13 @@
 services:
   - type: web
     name: ai-service
-    env: python
-    plan: free
-    buildCommand: "pip install -r requirements.txt"
-    startCommand: "python app.py"
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app --preload --bind 0.0.0.0:$PORT
     envVars:
-      - key: PORT
-        value: 10000
+      - key: MONGO_URI
+        value: mongodb+srv://shuvokumerraycse10:180114Shuvo@cluster0.0doar1z.mongodb.net/digi-thesis_DB?retryWrites=true&w=majority&appName=Cluster0
+      - key: DB_NAME
+        value: digi-thesis_DB
+      - key: COLLECTION_NAME
+        value: theses
