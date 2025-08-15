@@ -95,10 +95,10 @@ const Navbar = () => {
         isSticky ? "sticky" : "transparent"
       }`}
     >
-      <div className="container">
+      <div className="container text-white">
         <NavLink to="/" className="navbar-brand d-flex align-items-center">
           <FontAwesomeIcon icon={faGraduationCap} size="2x" className="me-2" />
-          <span className="fs-5 d-none d-md-block">
+          <span className="fs-2 text-blue d-none d-md-block">
             Digital Thesis Repository
           </span>
         </NavLink>
@@ -138,7 +138,7 @@ const Navbar = () => {
             </div>
           </form>
 
-          <ul className="navbar-nav ms-auto">
+          <ul className="navbar-nav ms-auto text-white">
             {isAuthenticated ? (
               <>
                 {isAdminOrSupervisor && (

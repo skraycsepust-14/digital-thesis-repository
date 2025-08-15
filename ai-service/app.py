@@ -17,12 +17,8 @@ from bson.errors import InvalidId # Import InvalidId for handling bad MongoDB ID
 
 # NEW IMPORTS FOR AI FEATURES
 import textstat # For Readability Score
-
-
 # Load the spaCy and TextBlob models
 nlp = spacy.load("en_core_web_sm")
-
-
 # Initialize LanguageTool for grammar checking
 try:
     grammar_tool = language_tool_python.LanguageTool('en-US')

@@ -168,7 +168,7 @@ const HomePage = () => {
 
   if (error && !searchQuery) {
     return (
-      <div className="container mt-5">
+      <div className="container mt-4">
         <div className="alert alert-danger text-center">{error}</div>
       </div>
     );
@@ -176,9 +176,9 @@ const HomePage = () => {
 
   return (
     <>
-      <div className="hero-section text-center py-5">
+      <div className="hero-section text-center mb-2 py-5">
         <h1 className="hero-title">Academic Thesis Repository</h1>
-        <p className="hero-subtitle mb-4">{heroText}</p>
+        <p className="hero-subtitle mb-3">{heroText}</p>
         <div className="d-flex justify-content-center">
           <Link
             to={user ? "/upload-thesis" : "/login"}
@@ -195,10 +195,10 @@ const HomePage = () => {
           <SearchResultPage />
         ) : (
           <>
-            <h2 className="text-center mb-4 text-primary">
+            <h2 className="text-center mb-3 text-primary">
               Recent Submissions
             </h2>
-            <div className="filters-sort-container mb-4 p-3 border rounded">
+            <div className="filters-sort-container mb-3 p-3 border rounded">
               <div className="row g-3 align-items-center">
                 <div className="col-md-auto fw-bold text-secondary">
                   <FontAwesomeIcon icon={faFilter} className="me-2" />

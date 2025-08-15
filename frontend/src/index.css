@@ -14,7 +14,7 @@ body {
   /* --- Global Styling --- */
   font-family: 'Roboto', sans-serif;
   /* Keep one global font family consistent */
-  background-color: #343a40 !important;
+  background-color: #959f9f !important;
   /* Dark background for the entire application body */
   color: #f8f9fa;
   /* IMPORTANT: Changed to a light color for text visibility on dark background */
@@ -23,10 +23,3 @@ body {
   overflow-y: auto;
   /* CRITICAL: Allows vertical scrolling when content exceeds viewport height */
 }
-
-/* You can keep your .content-wrapper in App.css if you prefer: */
-/* frontend/src/App.css */
-/* .content-wrapper {
-  min-height: 100vh;
-  padding-top: 8rem;
-} */

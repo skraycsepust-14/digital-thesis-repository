@@ -1,12 +1,9 @@
-/* frontend/src/styles/Navbar.css */
-
-/* --- Default Light Theme Styles --- */
-
 /* Base navbar styling. The navbar starts as 'transparent' and becomes 'sticky' on scroll. */
 .navbar {
     transition: all 0.3s ease-in-out;
     padding: 1.5rem 0;
     z-index: 1000;
+    color: #e8eaed;
 }
 
 /* Transparent State (initial, before scroll) */
@@ -81,7 +78,7 @@
 
 /* Dropdown Menu */
 .dropdown-menu {
-    border: 1px solid #e9ecef;
+    border: 1px solid #05203b;
     box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.1);
     background-color: #ffffff;
 }
