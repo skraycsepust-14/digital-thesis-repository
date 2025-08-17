@@ -59,7 +59,12 @@ const ThesisDetailPage = () => {
   }, [thesis]);
 
   const triggerAIAnalysis = async () => {
-    if (!thesis?.full_text) return;
+    // If there is no full_text, alert the user and return.
+    if (!thesis?.full_text) {
+      setToastMsg("Cannot perform AI analysis: No full text available.");
+      setTimeout(() => setToastMsg(""), 4000);
+      return;
+    }
     try {
       setLoadingAI(true);
       const response = await axios.post(`${API_BASE_URL}/analyze`, {
@@ -191,7 +196,7 @@ const ThesisDetailPage = () => {
           <hr />
 
           <div className="d-flex justify-content-between align-items-center">
-            <div className="text-muted">
+            <div className="text-white">
               Status:{" "}
               <span className={getStatusColor(thesis.status)}>
                 {getStatusIcon(thesis.status)}

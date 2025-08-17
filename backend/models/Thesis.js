@@ -69,6 +69,10 @@ const ThesisSchema = new mongoose.Schema({
         type: String,
         enum: ['pending', 'complete', 'failed'],
         default: 'pending',
+    },
+    full_text: {
+        type: String,
+        required: false
     }
 });
 

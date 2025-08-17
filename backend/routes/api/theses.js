@@ -8,7 +8,7 @@ const thesisLogger = require('../../middleware/thesisLogger');
 const sendEmail = require('../../utils/sendEmail');
 const multer = require('multer');
 const path = require('path');
-
+const fs = require('fs');
 // Multer storage
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, 'uploads/'),
@@ -155,7 +155,35 @@ router.get('/:id', auth, async (req, res) => {
     res.status(500).send('Server Error');
   }
 });
+// @route    POST api/theses/analyze
+// @desc     Perform AI analysis on a thesis
+// @access   Private (Auth token required)
+router.post('/analyze', auth, async (req, res) => {
+  try {
+    const { text } = req.body;
+    
+    // ⚠️ IMPORTANT: Implement your AI analysis logic here.
+    // This is a placeholder for your actual analysis function.
+    // The analysis should take the 'text' and return summary, keywords, and sentiment.
+    
+    // This could be a call to an external AI service or a local function.
+    const mockAnalysisResults = {
+      summary: "This is a summary generated from the thesis text.",
+      keywords: ["keyword1", "keyword2", "keyword3"],
+      sentiment: "positive"
+    };
 
+    // The backend should call a function that performs the analysis
+    // and returns the results. For example:
+    // const results = await performAIAnalysis(text);
+
+    // Send the results back to the frontend
+    res.json(mockAnalysisResults);
+  } catch (err) {
+    console.error('AI Analysis API Error:', err.message);
+    res.status(500).send('Server Error during AI Analysis');
+  }
+});
 // POST - Upload thesis + Notify admins
 router.post('/', auth, upload.single('thesisFile'), async (req, res) => {
   try {
@@ -164,7 +192,7 @@ router.post('/', auth, upload.single('thesisFile'), async (req, res) => {
     if (!req.file) {
       return res.status(400).json({ msg: 'Thesis file is required' });
     }
-
+    const fullTextContent = fs.readFileSync(req.file.path, 'utf8');
     const newThesis = new Thesis({
       user: req.user.id,
       title,
@@ -175,7 +203,8 @@ router.post('/', auth, upload.single('thesisFile'), async (req, res) => {
       keywords: keywords.split(',').map(k => k.trim()),
       supervisor,
       filePath: req.file.path,
-      fileName: req.file.originalname
+      fileName: req.file.originalname,
+      full_text: fullTextContent
     });
 
     const thesis = await newThesis.save();
@@ -197,7 +226,36 @@ router.post('/', auth, upload.single('thesisFile'), async (req, res) => {
     res.status(500).send('Server Error');
   }
 });
+// @route    PATCH api/theses/:id
+// @desc     Update AI analysis results for a thesis
+// @access   Private (Auth token required)
+router.patch('/:id', auth, async (req, res) => {
+  try {
+    const { aiSummary, aiKeywords, aiSentiment, analysisStatus } = req.body;
 
+    const thesis = await Thesis.findById(req.params.id);
+    if (!thesis) {
+      return res.status(404).json({ msg: 'Thesis not found' });
+    }
+
+    // Check if the user is authorized to update the thesis
+    // Assuming only the owner or an admin can update this
+    if (thesis.user.toString() !== req.user.id && req.user.role !== 'admin') {
+      return res.status(401).json({ msg: 'User not authorized to update this thesis' });
+    }
+
+    const updatedThesis = await Thesis.findByIdAndUpdate(
+      req.params.id,
+      { $set: { aiSummary, aiKeywords, aiSentiment, analysisStatus } },
+      { new: true }
+    );
+
+    res.json(updatedThesis);
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send('Server Error');
+  }
+});
 // PUT - Approve/Reject
 router.put('/approve/:id', auth, role(['admin', 'supervisor']), thesisLogger, async (req, res) => {
   try {
